@@ -1,0 +1,242 @@
+{
+    "bootstrap": {
+        "node": {
+            "id": "sidecar~10.244.1.53~kong-6d9cb5c75c-slr7w.kong~kong.svc.cluster.local",
+            "cluster": "kong.kong",
+            "metadata": {
+                    "CONFIG_NAMESPACE": "kong",
+                    "INTERCEPTION_MODE": "REDIRECT",
+                    "ISTIO_META_INSTANCE_IPS": "10.244.1.53,10.244.1.53",
+                    "ISTIO_PROXY_SHA": "istio-proxy:a169a0c0cd86b51538c240e2d037fa8f7f5860ae",
+                    "ISTIO_PROXY_VERSION": "1.1.3",
+                    "ISTIO_VERSION": "1.1.3",
+                    "POD_NAME": "kong-6d9cb5c75c-slr7w",
+                    "app": "kong",
+                    "istio": "sidecar",
+                    "name": "kong"
+                },
+            "locality": {
+
+            },
+            "buildVersion": "a169a0c0cd86b51538c240e2d037fa8f7f5860ae/1.11.0-dev/Clean/RELEASE/BoringSSL"
+        },
+        "staticResources": {
+            "listeners": [
+                {
+                    "address": {
+                        "socketAddress": {
+                            "address": "0.0.0.0",
+                            "portValue": 15090
+                        }
+                    },
+                    "filterChains": [
+                        {
+                            "filters": [
+                                {
+                                    "name": "envoy.http_connection_manager",
+                                    "config": {
+                                            "codec_type": "AUTO",
+                                            "http_filters": {
+                                                        "name": "envoy.router"
+                                                    },
+                                            "route_config": {
+                                                        "virtual_hosts": [
+                                                                    {
+                                                                                "domains": [
+                                                                                            "*"
+                                                                                        ],
+                                                                                "name": "backend",
+                                                                                "routes": [
+                                                                                            {
+                                                                                                        "match": {
+                                                                                                                    "prefix": "/stats/prometheus"
+                                                                                                                },
+                                                                                                        "route": {
+                                                                                                                    "cluster": "prometheus_stats"
+                                                                                                                }
+                                                                                                    }
+                                                                                        ]
+                                                                            }
+                                                                ]
+                                                    },
+                                            "stat_prefix": "stats"
+                                        }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "clusters": [
+                {
+                    "name": "prometheus_stats",
+                    "type": "STATIC",
+                    "connectTimeout": "0.250s",
+                    "hosts": [
+                        {
+                            "socketAddress": {
+                                "address": "127.0.0.1",
+                                "portValue": 15000
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "xds-grpc",
+                    "type": "STRICT_DNS",
+                    "connectTimeout": "10s",
+                    "hosts": [
+                        {
+                            "socketAddress": {
+                                "address": "istio-pilot.istio-system",
+                                "portValue": 15010
+                            }
+                        }
+                    ],
+                    "circuitBreakers": {
+                        "thresholds": [
+                            {
+                                "maxConnections": 100000,
+                                "maxPendingRequests": 100000,
+                                "maxRequests": 100000
+                            },
+                            {
+                                "priority": "HIGH",
+                                "maxConnections": 100000,
+                                "maxPendingRequests": 100000,
+                                "maxRequests": 100000
+                            }
+                        ]
+                    },
+                    "http2ProtocolOptions": {
+
+                    },
+                    "dnsLookupFamily": "V4_ONLY",
+                    "upstreamConnectionOptions": {
+                        "tcpKeepalive": {
+                            "keepaliveTime": 300
+                        }
+                    }
+                },
+                {
+                    "name": "zipkin",
+                    "type": "STRICT_DNS",
+                    "connectTimeout": "1s",
+                    "hosts": [
+                        {
+                            "socketAddress": {
+                                "address": "zipkin.istio-system",
+                                "portValue": 9411
+                            }
+                        }
+                    ],
+                    "dnsLookupFamily": "V4_ONLY"
+                }
+            ]
+        },
+        "dynamicResources": {
+            "ldsConfig": {
+                "ads": {
+
+                }
+            },
+            "cdsConfig": {
+                "ads": {
+
+                }
+            },
+            "adsConfig": {
+                "apiType": "GRPC",
+                "grpcServices": [
+                    {
+                        "envoyGrpc": {
+                            "clusterName": "xds-grpc"
+                        }
+                    }
+                ]
+            }
+        },
+        "statsConfig": {
+            "statsTags": [
+                {
+                    "tagName": "cluster_name",
+                    "regex": "^cluster\\.((.+?(\\..+?\\.svc\\.cluster\\.local)?)\\.)"
+                },
+                {
+                    "tagName": "tcp_prefix",
+                    "regex": "^tcp\\.((.*?)\\.)\\w+?$"
+                },
+                {
+                    "tagName": "response_code",
+                    "regex": "_rq(_(\\d{3}))$"
+                },
+                {
+                    "tagName": "response_code_class",
+                    "regex": "_rq(_(\\dxx))$"
+                },
+                {
+                    "tagName": "http_conn_manager_listener_prefix",
+                    "regex": "^listener(?=\\.).*?\\.http\\.(((?:[_.[:digit:]]*|[_\\[\\]aAbBcCdDeEfF[:digit:]]*))\\.)"
+                },
+                {
+                    "tagName": "http_conn_manager_prefix",
+                    "regex": "^http\\.(((?:[_.[:digit:]]*|[_\\[\\]aAbBcCdDeEfF[:digit:]]*))\\.)"
+                },
+                {
+                    "tagName": "listener_address",
+                    "regex": "^listener\\.(((?:[_.[:digit:]]*|[_\\[\\]aAbBcCdDeEfF[:digit:]]*))\\.)"
+                },
+                {
+                    "tagName": "mongo_prefix",
+                    "regex": "^mongo\\.(.+?)\\.(collection|cmd|cx_|op_|delays_|decoding_)(.*?)$"
+                }
+            ],
+            "useAllDefaultTags": false,
+            "statsMatcher": {
+                "inclusionList": {
+                    "patterns": [
+                        {
+                            "prefix": "cluster_manager"
+                        },
+                        {
+                            "prefix": "listener_manager"
+                        },
+                        {
+                            "prefix": "http_mixer_filter"
+                        },
+                        {
+                            "prefix": "tcp_mixer_filter"
+                        },
+                        {
+                            "prefix": "server"
+                        },
+                        {
+                            "prefix": "cluster.xds-grpc"
+                        }
+                    ]
+                }
+            }
+        },
+        "tracing": {
+            "http": {
+                "name": "envoy.zipkin",
+                "config": {
+                        "collector_cluster": "zipkin",
+                        "collector_endpoint": "/api/v1/spans",
+                        "shared_span_context": "false",
+                        "trace_id_128bit": "true"
+                    }
+            }
+        },
+        "admin": {
+            "accessLogPath": "/dev/null",
+            "address": {
+                "socketAddress": {
+                    "address": "127.0.0.1",
+                    "portValue": 15000
+                }
+            }
+        }
+    },
+    "lastUpdated": "2019-04-21T12:00:48.738Z"
+}
