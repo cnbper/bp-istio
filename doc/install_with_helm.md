@@ -6,12 +6,32 @@
 ## istio init
 
 ```shell
-rm -rf yaml/istio-init.yaml
+# 构建yaml文件
+LocalHub=registry.sloth.com
+
+# yaml/istio-init.yaml
+## mac linux
 helm template --name=istio-init --namespace istio-system \
-  --set global.hub=registry.sloth.com/istio \
+  --set global.hub=$LocalHub/istio \
   --set certmanager.enabled=true \
   istio-release/install/kubernetes/helm/istio-init > yaml/istio-init.yaml
+## win
+helm template --name=istio-init --namespace istio-system --set global.hub=$LocalHub/istio --set certmanager.enabled=true istio-release/install/kubernetes/helm/istio-init | out-file -filepath yaml/istio-init.yaml
 
+# yaml/istio.yaml
+## mac linux
+helm template --name=istio --namespace istio-system \
+  --set global.hub=registry.sloth.com/istio \
+  --set global.tracer.zipkin.address="zipkin.zipkin-system:9411" \
+  --set prometheus.hub=registry.sloth.com/prom \
+  --set gateways.istio-ingressgateway.type=NodePort \
+  --set global.proxy.accessLogFile="/dev/stdout" \
+  istio-release/install/kubernetes/helm/istio > yaml/istio.yaml
+## win
+helm template --name=istio --namespace istio-system --set global.hub=registry.sloth.com/istio --set global.tracer.zipkin.address="zipkin.zipkin-system:9411" --set prometheus.hub=registry.sloth.com/prom --set gateways.istio-ingressgateway.type=NodePort --set global.proxy.accessLogFile="/dev/stdout" istio-release/install/kubernetes/helm/istio | out-file -filepath yaml/istio.yaml
+```
+
+```shell
 # 安装
 kubectl create namespace istio-system
 kubectl apply -f yaml/istio-init.yaml
@@ -29,17 +49,6 @@ kubectl delete -f istio-release/install/kubernetes/helm/istio-init/files
 ## 部署 Istio defalut
 
 ```shell
-
-rm -rf yaml/istio.yaml
-helm template --name=istio --namespace istio-system \
-  --set global.hub=registry.sloth.com/istio \
-  --set global.tracer.zipkin.address="zipkin.zipkin-system:9411" \
-  --set prometheus.hub=registry.sloth.com/prom \
-  --set gateways.istio-ingressgateway.type=NodePort \
-  --set global.proxy.accessLogFile="/dev/stdout" \
-  istio-release/install/kubernetes/helm/istio > yaml/istio.yaml
-# 修改 image registry.cmft.com/third/busybox:1.30.1
-
 # 安装
 kubectl apply -f yaml/istio.yaml
 
