@@ -2,6 +2,15 @@
 
 <https://istio.io>
 
+## 初始化工作目录
+
+```shell
+# 注意调整istio版本
+IstioCurVersion=istio-1.1.5
+tar zxvf $IstioCurVersion-osx.tar.gz -C temp
+mv temp/$IstioCurVersion istio-release
+```
+
 ## helm安装
 
 ### windows
