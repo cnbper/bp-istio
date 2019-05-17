@@ -29,6 +29,18 @@ helm template --name=istio --namespace istio-system \
   istio-release/install/kubernetes/helm/istio > yaml/istio.yaml
 ## win
 helm template --name=istio --namespace istio-system --set global.hub=registry.sloth.com/istio --set global.tracer.zipkin.address="zipkin.zipkin-system:9411" --set prometheus.hub=registry.sloth.com/prom --set gateways.istio-ingressgateway.type=NodePort --set global.proxy.accessLogFile="/dev/stdout" istio-release/install/kubernetes/helm/istio | out-file -filepath yaml/istio.yaml
+
+# yaml/istio-auth.yaml
+## mac linux
+helm template --name=istio --namespace istio-system \
+  --set global.hub=registry.sloth.com/istio \
+  --set global.tracer.zipkin.address="zipkin.zipkin-system:9411" \
+  --set prometheus.hub=registry.sloth.com/prom \
+  --set gateways.istio-ingressgateway.type=NodePort \
+  --set global.proxy.accessLogFile="/dev/stdout" \
+  --set global.mtls.enabled=true \
+  --set global.controlPlaneSecurityEnabled=true \
+  istio-release/install/kubernetes/helm/istio > yaml/istio-auth.yaml
 ```
 
 ```shell
@@ -51,6 +63,7 @@ kubectl delete -f istio-release/install/kubernetes/helm/istio-init/files
 ```shell
 # 安装
 kubectl apply -f yaml/istio.yaml
+kubectl apply -f yaml/istio-auth.yaml
 
 # 验证
 kubectl get svc -n istio-system -o wide
@@ -58,47 +71,5 @@ kubectl get pods -n istio-system -o wide
 
 # 卸载
 kubectl delete -f yaml/istio.yaml
-```
-
-## 部署 示例项目
-
-```shell
-# 创建namespace，并配置自动注入
-kubectl create namespace istio-samples
-kubectl label namespace istio-samples istio-injection=enabled --overwrite
-# 注意调整镜像地址
-kubectl -n istio-samples apply -f istio-release/samples/bookinfo/platform/kube/bookinfo.yaml
-# 测试
-kubectl -n istio-samples get services
-kubectl -n istio-samples get pods
-kubectl -n istio-samples exec -it $(kubectl -n istio-samples get pod -l app=ratings -o jsonpath='{.items[0].metadata.name}') -c ratings -- curl productpage:9080/productpage | grep -o "<title>.*</title>"
-
-# 确定 ingress port 31380
-kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].nodePort}'
-
-# 定义入口网关配置，注意调整命名空间
-kubectl -n istio-samples apply -f istio-release/samples/bookinfo/networking/bookinfo-gateway.yaml
-# 测试
-kubectl get Gateway -n istio-samples
-kubectl get VirtualService -n istio-samples
-curl -s http://172.17.8.101:31380/productpage | grep -o "<title>.*</title>"
-
-# 卸载
-kubectl -n istio-samples delete -f istio-release/samples/bookinfo/networking/bookinfo-gateway.yaml
-kubectl -n istio-samples delete -f istio-release/samples/bookinfo/platform/kube/bookinfo.yaml
-kubectl delete namespace istio-samples
-```
-
-```shell
-# 注意调整命名空间
-# init
-$ kubectl -n istio-samples apply -f istio-release/samples/bookinfo/networking/destination-rule-all.yaml
-$ kubectl -n istio-samples get DestinationRule
-# 路由调整
-$ kubectl -n istio-samples apply -f istio-release/samples/bookinfo/networking/virtual-service-all-v1.yaml
-$ kubectl -n istio-samples apply -f istio-release/samples/bookinfo/networking/virtual-service-reviews-v2-v3.yaml
-# 故障注入
-$ kubectl -n istio-samples apply -f istio-release/samples/bookinfo/networking/fault-injection-details-v1.yaml
-# 故障注入 jason登录
-$ kubectl -n istio-samples apply -f istio-release/samples/bookinfo/networking/virtual-service-ratings-test-abort.yaml
+kubectl delete -f yaml/istio-auth.yaml
 ```

@@ -6,9 +6,13 @@
 
 ```shell
 # 注意调整istio版本
-IstioCurVersion=istio-1.1.5
+IstioCurVersion=istio-1.1.6
 tar zxvf $IstioCurVersion-osx.tar.gz -C temp
-mv temp/$IstioCurVersion istio-release
+rm -rf istio-release/*
+mv temp/$IstioCurVersion/* istio-release
+
+cp istio-release/bin/istioctl ../kubernetes-vagrant-centos-cluster/bin/istioctl
+sudo cp istio-release/bin/istioctl /usr/local/bin/istioctl
 ```
 
 ## helm安装
