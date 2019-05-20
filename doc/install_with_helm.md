@@ -41,6 +41,59 @@ helm template --name=istio --namespace istio-system \
   --set global.mtls.enabled=true \
   --set global.controlPlaneSecurityEnabled=true \
   istio-release/install/kubernetes/helm/istio > yaml/istio-auth.yaml
+
+# yaml/istio-auth-kiali.yaml
+## mac linux
+helm template --name=istio --namespace istio-system \
+  --set global.hub=registry.sloth.com/istio \
+  --set global.tracer.zipkin.address="zipkin.zipkin-system:9411" \
+  --set prometheus.hub=registry.sloth.com/prom \
+  --set gateways.istio-ingressgateway.type=NodePort \
+  --set global.proxy.accessLogFile="/dev/stdout" \
+  --set global.mtls.enabled=true \
+  --set global.controlPlaneSecurityEnabled=true \
+  --set kiali.enabled=true \
+  --set kiali.hub=registry.sloth.com/kiali \
+  istio-release/install/kubernetes/helm/istio > yaml/istio-auth-kiali.yaml
+
+# yaml/istio-auth-servicegraph.yaml
+## mac linux
+helm template --name=istio --namespace istio-system \
+  --set global.hub=registry.sloth.com/istio \
+  --set global.tracer.zipkin.address="zipkin.zipkin-system:9411" \
+  --set prometheus.hub=registry.sloth.com/prom \
+  --set gateways.istio-ingressgateway.type=NodePort \
+  --set global.proxy.accessLogFile="/dev/stdout" \
+  --set global.mtls.enabled=true \
+  --set global.controlPlaneSecurityEnabled=true \
+  --set servicegraph.enabled=true \
+  istio-release/install/kubernetes/helm/istio > yaml/istio-auth-servicegraph.yaml
+
+# yaml/istio-auth-grafana.yaml
+## mac linux
+helm template --name=istio --namespace istio-system \
+  --set global.hub=registry.sloth.com/istio \
+  --set global.tracer.zipkin.address="zipkin.zipkin-system:9411" \
+  --set prometheus.hub=registry.sloth.com/prom \
+  --set gateways.istio-ingressgateway.type=NodePort \
+  --set global.proxy.accessLogFile="/dev/stdout" \
+  --set global.mtls.enabled=true \
+  --set global.controlPlaneSecurityEnabled=true \
+  --set grafana.enabled=true \
+  --set grafana.image.repository=registry.sloth.com/grafana/grafana \
+  istio-release/install/kubernetes/helm/istio > yaml/istio-auth-grafana.yaml
+
+# yaml/istio-auth-noprom.yaml
+## mac linux
+helm template --name=istio --namespace istio-system \
+  --set global.hub=registry.sloth.com/istio \
+  --set global.tracer.zipkin.address="zipkin.zipkin-system:9411" \
+  --set prometheus.enabled=false \
+  --set gateways.istio-ingressgateway.type=NodePort \
+  --set global.proxy.accessLogFile="/dev/stdout" \
+  --set global.mtls.enabled=true \
+  --set global.controlPlaneSecurityEnabled=true \
+  istio-release/install/kubernetes/helm/istio > yaml/istio-auth-noprom.yaml
 ```
 
 ```shell

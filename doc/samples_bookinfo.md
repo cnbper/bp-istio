@@ -6,7 +6,9 @@
 # 创建namespace，并配置自动注入
 kubectl create namespace istio-samples
 kubectl label namespace istio-samples istio-injection=enabled --overwrite
-# 注意调整镜像地址
+# 调整镜像地址
+sed -i '' "s/istio\/examples-bookinfo/registry.sloth.com\/istio\/examples-bookinfo/g" istio-release/samples/bookinfo/platform/kube/bookinfo.yaml
+# 安装
 kubectl -n istio-samples apply -f istio-release/samples/bookinfo/platform/kube/bookinfo.yaml
 
 # 测试
@@ -18,6 +20,9 @@ kubectl -n istio-samples exec -it $(kubectl -n istio-samples get pod -l app=rati
 ## 定义入口网关配置
 
 ```shell
+# 添加以下内容
+#     - uri:
+#        prefix: /static
 kubectl -n istio-samples apply -f istio-release/samples/bookinfo/networking/bookinfo-gateway.yaml
 
 # 测试
