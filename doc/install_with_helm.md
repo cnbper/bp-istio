@@ -21,21 +21,21 @@ helm template --name=istio-init --namespace istio-system --set global.hub=$Local
 # yaml/istio.yaml
 ## mac linux
 helm template --name=istio --namespace istio-system \
-  --set global.hub=registry.sloth.com/istio \
+  --set global.hub=$LocalHub/istio \
   --set global.tracer.zipkin.address="zipkin.zipkin-system:9411" \
-  --set prometheus.hub=registry.sloth.com/prom \
+  --set prometheus.hub=$LocalHub/prom \
   --set gateways.istio-ingressgateway.type=NodePort \
   --set global.proxy.accessLogFile="/dev/stdout" \
   istio-release/install/kubernetes/helm/istio > yaml/istio.yaml
 ## win
-helm template --name=istio --namespace istio-system --set global.hub=registry.sloth.com/istio --set global.tracer.zipkin.address="zipkin.zipkin-system:9411" --set prometheus.hub=registry.sloth.com/prom --set gateways.istio-ingressgateway.type=NodePort --set global.proxy.accessLogFile="/dev/stdout" istio-release/install/kubernetes/helm/istio | out-file -filepath yaml/istio.yaml
+helm template --name=istio --namespace istio-system --set global.hub=$LocalHub/istio --set global.tracer.zipkin.address="zipkin.zipkin-system:9411" --set prometheus.hub=$LocalHub/prom --set gateways.istio-ingressgateway.type=NodePort --set global.proxy.accessLogFile="/dev/stdout" istio-release/install/kubernetes/helm/istio | out-file -filepath yaml/istio.yaml
 
 # yaml/istio-auth.yaml
 ## mac linux
 helm template --name=istio --namespace istio-system \
-  --set global.hub=registry.sloth.com/istio \
+  --set global.hub=$LocalHub/istio \
   --set global.tracer.zipkin.address="zipkin.zipkin-system:9411" \
-  --set prometheus.hub=registry.sloth.com/prom \
+  --set prometheus.hub=$LocalHub/prom \
   --set gateways.istio-ingressgateway.type=NodePort \
   --set global.proxy.accessLogFile="/dev/stdout" \
   --set global.mtls.enabled=true \
@@ -45,23 +45,23 @@ helm template --name=istio --namespace istio-system \
 # yaml/istio-auth-kiali.yaml
 ## mac linux
 helm template --name=istio --namespace istio-system \
-  --set global.hub=registry.sloth.com/istio \
+  --set global.hub=$LocalHub/istio \
   --set global.tracer.zipkin.address="zipkin.zipkin-system:9411" \
-  --set prometheus.hub=registry.sloth.com/prom \
+  --set prometheus.hub=$LocalHub/prom \
   --set gateways.istio-ingressgateway.type=NodePort \
   --set global.proxy.accessLogFile="/dev/stdout" \
   --set global.mtls.enabled=true \
   --set global.controlPlaneSecurityEnabled=true \
   --set kiali.enabled=true \
-  --set kiali.hub=registry.sloth.com/kiali \
+  --set kiali.hub=$LocalHub/kiali \
   istio-release/install/kubernetes/helm/istio > yaml/istio-auth-kiali.yaml
 
 # yaml/istio-auth-servicegraph.yaml
 ## mac linux
 helm template --name=istio --namespace istio-system \
-  --set global.hub=registry.sloth.com/istio \
+  --set global.hub=$LocalHub/istio \
   --set global.tracer.zipkin.address="zipkin.zipkin-system:9411" \
-  --set prometheus.hub=registry.sloth.com/prom \
+  --set prometheus.hub=$LocalHub/prom \
   --set gateways.istio-ingressgateway.type=NodePort \
   --set global.proxy.accessLogFile="/dev/stdout" \
   --set global.mtls.enabled=true \
@@ -72,21 +72,21 @@ helm template --name=istio --namespace istio-system \
 # yaml/istio-auth-grafana.yaml
 ## mac linux
 helm template --name=istio --namespace istio-system \
-  --set global.hub=registry.sloth.com/istio \
+  --set global.hub=$LocalHub/istio \
   --set global.tracer.zipkin.address="zipkin.zipkin-system:9411" \
-  --set prometheus.hub=registry.sloth.com/prom \
+  --set prometheus.hub=$LocalHub/prom \
   --set gateways.istio-ingressgateway.type=NodePort \
   --set global.proxy.accessLogFile="/dev/stdout" \
   --set global.mtls.enabled=true \
   --set global.controlPlaneSecurityEnabled=true \
   --set grafana.enabled=true \
-  --set grafana.image.repository=registry.sloth.com/grafana/grafana \
+  --set grafana.image.repository=$LocalHub/grafana/grafana \
   istio-release/install/kubernetes/helm/istio > yaml/istio-auth-grafana.yaml
 
 # yaml/istio-auth-noprom.yaml
 ## mac linux
 helm template --name=istio --namespace istio-system \
-  --set global.hub=registry.sloth.com/istio \
+  --set global.hub=$LocalHub/istio \
   --set global.tracer.zipkin.address="zipkin.zipkin-system:9411" \
   --set prometheus.enabled=false \
   --set gateways.istio-ingressgateway.type=NodePort \

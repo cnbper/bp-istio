@@ -28,3 +28,7 @@ sudo cp istio-release/bin/istioctl /usr/local/bin/istioctl
 ### mac
 
 TODO
+
+### linux
+
+<https://storage.googleapis.com/kubernetes-helm/helm-v2.13.1-linux-amd64.tar.gz>
