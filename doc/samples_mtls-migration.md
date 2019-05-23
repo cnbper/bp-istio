@@ -12,6 +12,9 @@
 
 ```shell
 # 注意调整镜像
+sed -i '' "s/docker.io/registry.sloth.com/g" istio-release/samples/httpbin/httpbin.yaml
+sed -i '' "s/pstauffer/registry.sloth.com\/pstauffer/g" istio-release/samples/sleep/sleep.yaml
+# 部署
 kubectl create ns foo
 kubectl apply -f <(istioctl kube-inject -f istio-release/samples/httpbin/httpbin.yaml) -n foo
 kubectl apply -f <(istioctl kube-inject -f istio-release/samples/sleep/sleep.yaml) -n foo
