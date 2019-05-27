@@ -4,7 +4,15 @@
 
 ```shell
 # 创建namespace，并配置自动注入
-kubectl create namespace istio-samples
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: Namespace
+metadata:
+ name: istio-samples
+ annotations:
+   scheduler.alpha.kubernetes.io/node-selector: istio.data.plane=yes
+EOF
+
 kubectl label namespace istio-samples istio-injection=enabled --overwrite
 # 调整镜像地址
 sed -i '' "s/istio\/examples-bookinfo/registry.sloth.com\/istio\/examples-bookinfo/g" istio-release/samples/bookinfo/platform/kube/bookinfo.yaml
