@@ -69,7 +69,18 @@ helm template --name=istio --namespace istio-system \
 
 ```shell
 # 安装
-kubectl create namespace istio-system
+kubectl label nodes kube-node1 istio.control.plane=yes
+kubectl label nodes kube-node2 istio.data.plane=yes
+
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: Namespace
+metadata:
+ name: istio-system
+ annotations:
+   scheduler.alpha.kubernetes.io/node-selector: istio.control.plane=yes
+EOF
+
 kubectl apply -f yaml/istio-init.yaml
 
 # 验证
