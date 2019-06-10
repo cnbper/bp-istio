@@ -24,11 +24,6 @@ ns=foo && kubectl -n $ns exec $(kubectl -n $ns get pods -l app=httpbin -o jsonpa
 
 ## 调试 Envoy 和 Pilot
 
-```shell
-# 查看 Pilot 日志
-kubectl -n istio-system logs $(kubectl -n istio-system get pods -l app=pilot -o jsonpath='{.items[0].metadata.name}') --follow --tail=100 discovery
-```
-
 ## Envoy proxy is NOT ready: config not received from Pilot (is Pilot running?)
 
 ### [warning][config] [bazel-out/k8-opt/bin/external/envoy/source/common/config/_virtual_includes/grpc_stream_lib/common/config/grpc_stream.h:86] gRPC config stream closed: 14, upstream connect error or disconnect/reset before headers. reset reason: connection failure
