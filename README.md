@@ -5,6 +5,8 @@
 ## 初始化工作目录
 
 ```shell
+mkdir -p temp
+
 # 注意调整istio版本
 IstioCurVersion=istio-1.2.0-rc.0
 tar zxvf $IstioCurVersion-osx.tar.gz -C temp

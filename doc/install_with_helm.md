@@ -63,7 +63,7 @@ kubectl delete -f istio-release/install/kubernetes/helm/istio-init/files
 ```shell
 # 构建yaml文件
 LocalHub=registry.sloth.com
-
+## 默认开启双向TLS
 helm template --name=istio --namespace istio-system \
   --set global.hub=$LocalHub/istio \
   --set global.tracer.zipkin.address="zipkin.zipkin-system:9411" \
@@ -91,7 +91,6 @@ helm template --name=istio --namespace istio-system \
   --set kiali.tag=v0.20 \
   --set kiali.createDemoSecret=true \
   --set kiali.dashboard.grafanaURL=http://grafana.sloth.com \
-  
   --set servicegraph.enabled=false \
   istio-release/install/kubernetes/helm/istio > yaml/istio.yaml
 ```

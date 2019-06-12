@@ -2,16 +2,16 @@ RemoteRegistry=registry.sloth.com
 
 IstioCurrentVersion=1.2.0-rc.0
 IstioOldVersion=1.1.7
-istio_modules=("istio/proxy_init" "istio/proxyv2" "istio/kubectl" "istio/galley" "istio/mixer" "istio/pilot" "istio/citadel" "istio/sidecar_injector" "istio/node-agent-k8s")
+istio_modules=("proxy_init" "proxyv2" "kubectl" "galley" "mixer" "pilot" "citadel" "sidecar_injector" "node-agent-k8s")
 
 for module in ${istio_modules[*]}
 do
-docker pull ${module}:$IstioCurrentVersion
-docker rmi ${module}:$IstioOldVersion
+docker pull istio/${module}:${IstioCurrentVersion}
+docker rmi istio/${module}:${IstioOldVersion}
 
-docker tag ${module}:$IstioCurrentVersion ${RemoteRegistry}/${module}:$IstioCurrentVersion
-docker push ${RemoteRegistry}/${module}:$IstioCurrentVersion
-docker rmi ${RemoteRegistry}/${module}:$IstioCurrentVersion
+docker tag istio/${module}:$IstioCurrentVersion ${RemoteRegistry}/istio/${module}:${IstioCurrentVersion}
+docker push ${RemoteRegistry}/istio/${module}:${IstioCurrentVersion}
+docker rmi ${RemoteRegistry}/istio/${module}:${IstioCurrentVersion}
 done
 
 PrometheusCurrentVersion=v2.8.0
