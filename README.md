@@ -8,7 +8,7 @@
 mkdir -p temp
 
 # 注意调整istio版本
-IstioCurVersion=istio-1.2.0-rc.3
+IstioCurVersion=istio-1.2.0
 tar zxvf $IstioCurVersion-osx.tar.gz -C temp
 rm -rf istio-release/*
 mv temp/$IstioCurVersion/* istio-release
