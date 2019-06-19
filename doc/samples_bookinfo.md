@@ -90,8 +90,6 @@ spec:
           servicePort: 9080
 EOF
 # curl -i -X GET --url http://172.17.8.101:32724/productpage --header 'HOST: bookinfo.sloth.com'
-
-kubectl -n istio-samples delete ingress bookinfo
 ```
 
 <http://bookinfo.sloth.com/productpage>
@@ -99,6 +97,8 @@ kubectl -n istio-samples delete ingress bookinfo
 ## 清除数据
 
 ```shell
+kubectl -n istio-samples delete ingress bookinfo
+kubectl -n istio-samples delete policy productpage
 kubectl -n istio-samples delete -f istio-release/samples/bookinfo/networking/bookinfo-gateway.yaml
 kubectl -n istio-samples delete -f istio-release/samples/bookinfo/platform/kube/bookinfo.yaml
 kubectl delete namespace istio-samples

@@ -10,6 +10,10 @@ kubectl -n istio-samples exec -it reviews-v2-95f489c6b-fwds8 -c istio-proxy sh
 
 # 获取 istio-proxy 配置
 ns=foo && kubectl -n $ns exec $(kubectl -n $ns get pods -l app=httpbin -o jsonpath='{.items[0].metadata.name}') -c istio-proxy -- curl localhost:15000/config_dump -s
+
+kubectl -n istio-samples port-forward details-v1-5cb8cdc758-w8psf 15000:15000
+# http://localhost:15000/stats/prometheus
+# http://localhost:15000/config_dump
 ```
 
 ## 开启debug日志

@@ -1,7 +1,7 @@
 RemoteRegistry=registry.sloth.com
 
-IstioCurrentVersion=1.2.0-rc.0
-IstioOldVersion=1.1.7
+IstioCurrentVersion=1.2.0-rc.2
+IstioOldVersion=1.2.0-rc.1
 istio_modules=("proxy_init" "proxyv2" "kubectl" "galley" "mixer" "pilot" "citadel" "sidecar_injector" "node-agent-k8s")
 
 for module in ${istio_modules[*]}
@@ -28,8 +28,21 @@ docker tag grafana/grafana:${GrafanaCurrentVersion} ${RemoteRegistry}/grafana/gr
 docker push ${RemoteRegistry}/grafana/grafana:${GrafanaCurrentVersion}
 docker rmi ${RemoteRegistry}/grafana/grafana:${GrafanaCurrentVersion}
 
-KialiCurrentVersion=v0.20
-KialiOldVersion=v0.16
+OpenzipkinVersion=2
+docker pull docker.io/openzipkin/zipkin:${OpenzipkinVersion}
+docker tag docker.io/openzipkin/zipkin:${OpenzipkinVersion} ${RemoteRegistry}/openzipkin/zipkin:${OpenzipkinVersion}
+docker push ${RemoteRegistry}/openzipkin/zipkin:${OpenzipkinVersion}
+docker rmi ${RemoteRegistry}/openzipkin/zipkin:${OpenzipkinVersion}
+
+JaegertracingVersion=1.9
+
+docker pull jaegertracing/all-in-one:${JaegertracingVersion}
+docker tag jaegertracing/all-in-one:${JaegertracingVersion} ${RemoteRegistry}/jaegertracing/all-in-one:${JaegertracingVersion}
+docker push ${RemoteRegistry}/jaegertracing/all-in-one:${JaegertracingVersion}
+docker rmi ${RemoteRegistry}/jaegertracing/all-in-one:${JaegertracingVersion}
+
+KialiCurrentVersion=v0.21
+KialiOldVersion=v0.20
 
 docker pull docker.io/kiali/kiali:${KialiCurrentVersion}
 docker tag docker.io/kiali/kiali:${KialiCurrentVersion} ${RemoteRegistry}/kiali/kiali:${KialiCurrentVersion}

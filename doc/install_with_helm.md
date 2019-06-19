@@ -12,13 +12,10 @@
 LocalHub=registry.sloth.com
 
 # yaml/istio-init.yaml
-## mac linux
 helm template --name=istio-init --namespace istio-system \
   --set global.hub=$LocalHub/istio \
   --set certmanager.enabled=true \
   istio-release/install/kubernetes/helm/istio-init > yaml/istio-init.yaml
-## win
-helm template --name=istio-init --namespace istio-system --set global.hub=$LocalHub/istio --set certmanager.enabled=true istio-release/install/kubernetes/helm/istio-init | out-file -filepath yaml/istio-init.yaml
 ```
 
 - **安装crd**
@@ -63,43 +60,21 @@ kubectl delete -f istio-release/install/kubernetes/helm/istio-init/files
 ```shell
 # 构建yaml文件
 LocalHub=registry.sloth.com
-## 默认开启双向TLS
+
+# 最小安装
 helm template --name=istio --namespace istio-system \
   --set global.hub=$LocalHub/istio \
-  --set global.tracer.zipkin.address="zipkin.zipkin-system:9411" \
+  --set global.tracer.zipkin.address="zipkin.istio-system:9411" \
   --set global.proxy.accessLogFile="/dev/stdout" \
-  --set global.mtls.enabled=true \
-  --set global.controlPlaneSecurityEnabled=true \
-  --set global.proxy.resources.requests.cpu=100m \
-  --set global.proxy.resources.requests.memory=128Mi \
-  --set global.proxy.resources.limits.cpu=2000m \
-  --set global.proxy.resources.limits.memory=1024Mi \
-  --set pilot.resources.requests.cpu=100m \
-  --set pilot.resources.requests.memory=512Mi \
-  --set mixer.telemetry.resources.requests.cpu=250m \
-  --set mixer.telemetry.resources.requests.memory=256Mi \
-  --set mixer.telemetry.resources.limits.cpu=4800m \
-  --set mixer.telemetry.resources.limits.memory=4G \
+  --set global.proxy.resources.requests.cpu=50m \
+  --set global.proxy.resources.requests.memory=64Mi \
+  --set pilot.resources.requests.cpu=62m \
+  --set pilot.resources.requests.memory=256Mi \
+  --set mixer.telemetry.resources.requests.cpu=125m \
+  --set mixer.telemetry.resources.requests.memory=128Mi \
   --set gateways.enabled=false \
-  --set gateways.istio-ingressgateway.type=NodePort \
-  --set prometheus.enabled=true \
-  --set prometheus.hub=$LocalHub/prom \
-  --set grafana.enabled=true \
-  --set grafana.image.repository=$LocalHub/grafana/grafana \
-  --set kiali.enabled=true \
-  --set kiali.hub=$LocalHub/kiali \
-  --set kiali.tag=v0.20 \
-  --set kiali.createDemoSecret=true \
-  --set kiali.dashboard.grafanaURL=http://grafana.sloth.com \
-  --set servicegraph.enabled=false \
+  --set prometheus.enabled=false \
   istio-release/install/kubernetes/helm/istio > yaml/istio.yaml
-```
-
-- 去除 kiali 登陆验证，**vi yaml/istio.yaml** || **ConfigMap:kiali**
-
-```yaml
-    auth:
-      strategy: anonymous
 ```
 
 - **部署 Istio 控制面**
@@ -116,9 +91,34 @@ kubectl get pods -n istio-system -o wide
 kubectl delete -f yaml/istio.yaml
 ```
 
-## 暴露控制面服务
+- **开启双向TLS**
 
-- prometheus
+```shell
+## 开启双向TLS
+  --set global.mtls.enabled=true \
+  --set global.controlPlaneSecurityEnabled=true \
+```
+
+
+## 安装附加服务
+
+### prometheus
+
+```shell
+cp istio-release/install/kubernetes/helm/istio/templates/_affinity.tpl istio-release/install/kubernetes/helm/istio/charts/prometheus/templates/_affinity.tpl
+
+helm template --name=istio --namespace istio-system \
+  --values istio-release/install/kubernetes/helm/istio/values.yaml \
+  --set enabled=true \
+  --set hub=$LocalHub/prom \
+  istio-release/install/kubernetes/helm/istio/charts/prometheus > yaml/istio-prometheus.yaml
+
+# 安装
+kubectl apply -f yaml/istio-prometheus.yaml
+
+# 卸载
+kubectl delete -f yaml/istio-prometheus.yaml
+```
 
 ```shell
 cat <<EOF | kubectl -n istio-system apply -f -
@@ -141,7 +141,26 @@ EOF
 
 访问：<http://prometheus.sloth.com>
 
-- grafana
+### grafana
+
+```shell
+cp istio-release/install/kubernetes/helm/istio/templates/_affinity.tpl istio-release/install/kubernetes/helm/istio/charts/grafana/templates/_affinity.tpl
+cp istio-release/install/kubernetes/helm/istio/templates/install-custom-resources.sh.tpl istio-release/install/kubernetes/helm/istio/charts/grafana/templates/install-custom-resources.sh.tpl
+
+helm template --name=istio --namespace istio-system \
+  --values istio-release/install/kubernetes/helm/istio/values.yaml \
+  --set global.hub=$LocalHub/istio \
+  --set enabled=true \
+  --set security.enabled=false \
+  --set image.repository=$LocalHub/grafana/grafana \
+  istio-release/install/kubernetes/helm/istio/charts/grafana > yaml/istio-grafana.yaml
+
+# 安装
+kubectl apply -f yaml/istio-grafana.yaml
+
+# 卸载
+kubectl delete -f yaml/istio-grafana.yaml
+```
 
 ```shell
 cat <<EOF | kubectl -n istio-system apply -f -
@@ -164,7 +183,35 @@ EOF
 
 访问：<http://grafana.sloth.com>
 
-- kiali
+### kiali
+
+```shell
+cp istio-release/install/kubernetes/helm/istio/templates/_affinity.tpl istio-release/install/kubernetes/helm/istio/charts/kiali/templates/_affinity.tpl
+
+helm template --name=istio --namespace istio-system \
+  --values istio-release/install/kubernetes/helm/istio/values.yaml \
+  --set enabled=true \
+  --set hub=$LocalHub/kiali \
+  --set tag=v0.20 \
+  --set createDemoSecret=true \
+  --set dashboard.grafanaURL=http://grafana.sloth.com \
+  istio-release/install/kubernetes/helm/istio/charts/kiali > yaml/istio-kiali.yaml
+
+# 安装
+kubectl apply -f yaml/istio-kiali.yaml
+
+# 卸载
+kubectl delete -f yaml/istio-kiali.yaml
+```
+
+- 去除 kiali 登陆验证，**vi yaml/istio.yaml** || **ConfigMap:kiali**
+
+```yaml
+    auth:
+      strategy: anonymous
+```
+
+- 配置 Ingress
 
 ```shell
 cat <<EOF | kubectl -n istio-system apply -f -
@@ -186,3 +233,63 @@ EOF
 ```
 
 访问：<http://kiali.sloth.com/kiali/> admin/admin
+
+### tracing
+
+```shell
+cp istio-release/install/kubernetes/helm/istio/templates/_affinity.tpl istio-release/install/kubernetes/helm/istio/charts/tracing/templates/_affinity.tpl
+
+# zipkin
+helm template --name=istio --namespace istio-system \
+  --values istio-release/install/kubernetes/helm/istio/values.yaml \
+  --set enabled=true \
+  --set provider=zipkin \
+  --set zipkin.hub=$LocalHub/openzipkin \
+  --set zipkin.resources.requests.cpu=100m \
+  --set zipkin.resources.requests.memory=150Mi \
+  istio-release/install/kubernetes/helm/istio/charts/tracing > yaml/istio-tracing.yaml
+
+# jaeger
+helm template --name=istio --namespace istio-system \
+  --values istio-release/install/kubernetes/helm/istio/values.yaml \
+  --set enabled=true \
+  --set provider=jaeger \
+  --set jaeger.hub=$LocalHub/jaegertracing \
+  istio-release/install/kubernetes/helm/istio/charts/tracing > yaml/istio-tracing.yaml
+
+# 安装
+kubectl apply -f yaml/istio-tracing.yaml
+
+# 卸载
+kubectl delete -f yaml/istio-tracing.yaml
+```
+
+- 调整采样率，默认采样率 1%
+
+```shell
+# PILOT_TRACE_SAMPLING 100
+kubectl -n istio-system edit deployment istio-pilot
+```
+
+- 配置 Ingress
+
+```shell
+cat <<EOF | kubectl -n istio-system apply -f -
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: tracing
+spec:
+  rules:
+  - host: tracing.sloth.com
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: tracing
+          servicePort: http-query
+EOF
+# 配置host： tracing.sloth.com
+```
+
+访问：<http://tracing.sloth.com>
