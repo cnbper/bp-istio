@@ -9,11 +9,11 @@
 
 ```shell
 # 构建yaml文件
-LocalHub=registry.sloth.com
+LocalHub=registry.sloth.com/ipaas
 
 # yaml/istio-init.yaml
 helm template --name=istio-init --namespace istio-system \
-  --set global.hub=$LocalHub/istio \
+  --set global.hub=$LocalHub \
   --set certmanager.enabled=true \
   istio-release/install/kubernetes/helm/istio-init > yaml/istio-init.yaml
 ```
@@ -59,11 +59,11 @@ kubectl delete -f istio-release/install/kubernetes/helm/istio-init/files
 
 ```shell
 # 构建yaml文件
-LocalHub=registry.sloth.com
+LocalHub=registry.sloth.com/ipaas
 
 # 最小安装
 helm template --name=istio --namespace istio-system \
-  --set global.hub=$LocalHub/istio \
+  --set global.hub=$LocalHub \
   --set global.tracer.zipkin.address="zipkin.istio-system:9411" \
   --set global.proxy.accessLogFile="/dev/stdout" \
   --set global.proxy.resources.requests.cpu=50m \
@@ -110,7 +110,7 @@ cp istio-release/install/kubernetes/helm/istio/templates/_affinity.tpl istio-rel
 helm template --name=istio --namespace istio-system \
   --values istio-release/install/kubernetes/helm/istio/values.yaml \
   --set enabled=true \
-  --set hub=$LocalHub/prom \
+  --set hub=$LocalHub \
   istio-release/install/kubernetes/helm/istio/charts/prometheus > yaml/istio-prometheus.yaml
 
 # 安装
@@ -149,10 +149,10 @@ cp istio-release/install/kubernetes/helm/istio/templates/install-custom-resource
 
 helm template --name=istio --namespace istio-system \
   --values istio-release/install/kubernetes/helm/istio/values.yaml \
-  --set global.hub=$LocalHub/istio \
+  --set global.hub=$LocalHub \
   --set enabled=true \
   --set security.enabled=false \
-  --set image.repository=$LocalHub/grafana/grafana \
+  --set image.repository=$LocalHub/grafana \
   istio-release/install/kubernetes/helm/istio/charts/grafana > yaml/istio-grafana.yaml
 
 # 安装
@@ -191,7 +191,7 @@ cp istio-release/install/kubernetes/helm/istio/templates/_affinity.tpl istio-rel
 helm template --name=istio --namespace istio-system \
   --values istio-release/install/kubernetes/helm/istio/values.yaml \
   --set enabled=true \
-  --set hub=$LocalHub/kiali \
+  --set hub=$LocalHub \
   --set tag=v0.20 \
   --set createDemoSecret=true \
   --set dashboard.grafanaURL=http://grafana.sloth.com \
@@ -244,7 +244,7 @@ helm template --name=istio --namespace istio-system \
   --values istio-release/install/kubernetes/helm/istio/values.yaml \
   --set enabled=true \
   --set provider=zipkin \
-  --set zipkin.hub=$LocalHub/openzipkin \
+  --set zipkin.hub=$LocalHub \
   --set zipkin.resources.requests.cpu=100m \
   --set zipkin.resources.requests.memory=150Mi \
   istio-release/install/kubernetes/helm/istio/charts/tracing > yaml/istio-tracing.yaml
@@ -254,7 +254,7 @@ helm template --name=istio --namespace istio-system \
   --values istio-release/install/kubernetes/helm/istio/values.yaml \
   --set enabled=true \
   --set provider=jaeger \
-  --set jaeger.hub=$LocalHub/jaegertracing \
+  --set jaeger.hub=$LocalHub \
   istio-release/install/kubernetes/helm/istio/charts/tracing > yaml/istio-tracing.yaml
 
 # 安装
