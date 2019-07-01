@@ -91,15 +91,6 @@ kubectl get pods -n istio-system -o wide
 kubectl delete -f yaml/istio.yaml
 ```
 
-- **开启双向TLS**
-
-```shell
-## 开启双向TLS
-  --set global.mtls.enabled=true \
-  --set global.controlPlaneSecurityEnabled=true \
-```
-
-
 ## 安装附加服务
 
 ### prometheus
@@ -198,7 +189,7 @@ helm template --name=istio --namespace istio-system \
   istio-release/install/kubernetes/helm/istio/charts/kiali > yaml/istio-kiali.yaml
 
 # 安装
-kubectl apply -f yaml/istio-kiali.yaml
+ 
 
 # 卸载
 kubectl delete -f yaml/istio-kiali.yaml
@@ -264,13 +255,6 @@ kubectl apply -f yaml/istio-tracing.yaml
 kubectl delete -f yaml/istio-tracing.yaml
 ```
 
-- 调整采样率，默认采样率 1%
-
-```shell
-# PILOT_TRACE_SAMPLING 100
-kubectl -n istio-system edit deployment istio-pilot
-```
-
 - 配置 Ingress
 
 ```shell
@@ -293,3 +277,26 @@ EOF
 ```
 
 访问：<http://tracing.sloth.com>
+
+## istio 功能变更
+
+- **调整采样率，默认采样率 1%**
+
+```shell
+# PILOT_TRACE_SAMPLING 100
+kubectl -n istio-system edit deployment istio-pilot
+```
+
+- **开启双向TLS**
+
+```shell
+## 安装时开启双向TLS
+  --set global.mtls.enabled=true \
+  --set global.controlPlaneSecurityEnabled=true \
+```
+
+- **关闭访问日志**
+
+- **变更调用链追踪地址**
+
+- **kafka**

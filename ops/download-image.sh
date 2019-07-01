@@ -1,7 +1,7 @@
 RemoteRegistry=registry.sloth.com/ipaas
 
-IstioCurrentVersion=1.2.0
-IstioOldVersion=1.2.0-rc.3
+IstioCurrentVersion=1.2.2
+IstioOldVersion=1.2.0
 istio_modules=("proxy_init" "proxyv2" "kubectl" "galley" "mixer" "pilot" "citadel" "sidecar_injector" "node-agent-k8s")
 
 for module in ${istio_modules[*]}
@@ -27,6 +27,12 @@ docker push ${RemoteRegistry}/grafana:${GrafanaCurrentVersion}
 docker rmi ${RemoteRegistry}/grafana:${GrafanaCurrentVersion}
 
 KialiCurrentVersion=v0.20
+docker pull docker.io/kiali/kiali:${KialiCurrentVersion}
+docker tag docker.io/kiali/kiali:${KialiCurrentVersion} ${RemoteRegistry}/kiali:${KialiCurrentVersion}
+docker push ${RemoteRegistry}/kiali:${KialiCurrentVersion}
+docker rmi ${RemoteRegistry}/kiali:${KialiCurrentVersion}
+
+KialiCurrentVersion=v1.1.0
 docker pull docker.io/kiali/kiali:${KialiCurrentVersion}
 docker tag docker.io/kiali/kiali:${KialiCurrentVersion} ${RemoteRegistry}/kiali:${KialiCurrentVersion}
 docker push ${RemoteRegistry}/kiali:${KialiCurrentVersion}

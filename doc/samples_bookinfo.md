@@ -103,3 +103,90 @@ kubectl -n istio-samples delete -f istio-release/samples/bookinfo/networking/boo
 kubectl -n istio-samples delete -f istio-release/samples/bookinfo/platform/kube/bookinfo.yaml
 kubectl delete namespace istio-samples
 ```
+
+## 构建镜像
+
+```shell
+docker pull ruby:2.6.3-slim
+docker pull python:3.6-slim
+docker pull node:12-slim
+docker pull gradle:4.8.1
+docker pull websphere-liberty:19.0.0.4-javaee8
+docker pull mongo
+docker pull mysql:8.0.16
+```
+
+```shell
+cd /Users/zhangbaohao/software/golang/workspace/src/istio.io/istio/samples/bookinfo
+
+./build_push_update_images.sh 1.12.0-dev
+```
+
+```shell
+cat <<EOF | kubectl -n istio-samples apply -f -
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reviews-v1
+  labels:
+    app: reviews
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: reviews
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: reviews
+        version: v1
+    spec:
+      serviceAccountName: bookinfo-reviews
+      containers:
+      - name: reviews
+        env:
+        - name: APOLLO_META
+          value: "http://192.168.1.102:8080"
+        image: registry.sloth.com/ipaas/examples-bookinfo-reviews-v1:1.0-dev
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 9080
+EOF
+
+cat <<EOF | kubectl -n istio-samples apply -f -
+apiVersion: v1
+kind: Service
+metadata:
+  name: reviews-v1
+  labels:
+    app: reviews
+    service: reviews
+spec:
+  ports:
+  - port: 9080
+    name: http
+  - port: 9999
+    name: http-job
+  selector:
+    app: reviews
+    version: v1
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: reviews-job-v1
+spec:
+  rules:
+  - host: reviews-job-v1.sloth.com
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: reviews-v1
+          servicePort: 9999
+EOF
+
+kubectl -n istio-samples delete deployment reviews-v1
+```
