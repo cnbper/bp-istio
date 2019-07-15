@@ -68,6 +68,7 @@ helm template --name=istio --namespace istio-system \
   --set global.proxy.accessLogFile="/dev/stdout" \
   --set global.proxy.resources.requests.cpu=50m \
   --set global.proxy.resources.requests.memory=64Mi \
+  --set global.policyCheckFailOpen=true \
   --set pilot.resources.requests.cpu=62m \
   --set pilot.resources.requests.memory=256Mi \
   --set mixer.telemetry.resources.requests.cpu=125m \
@@ -183,13 +184,12 @@ helm template --name=istio --namespace istio-system \
   --values istio-release/install/kubernetes/helm/istio/values.yaml \
   --set enabled=true \
   --set hub=$LocalHub \
-  --set tag=v0.20 \
   --set createDemoSecret=true \
   --set dashboard.grafanaURL=http://grafana.sloth.com \
   istio-release/install/kubernetes/helm/istio/charts/kiali > yaml/istio-kiali.yaml
 
 # 安装
- 
+kubectl apply -f yaml/istio-kiali.yaml
 
 # 卸载
 kubectl delete -f yaml/istio-kiali.yaml
