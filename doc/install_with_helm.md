@@ -71,10 +71,16 @@ helm template --name=istio --namespace istio-system \
   --set global.policyCheckFailOpen=true \
   --set pilot.resources.requests.cpu=62m \
   --set pilot.resources.requests.memory=256Mi \
+  --set pilot.traceSampling=100.0 \
+  --set mixer.policy.replicaCount=1 \
+  --set mixer.telemetry.replicaCount=1 \
   --set mixer.telemetry.resources.requests.cpu=125m \
   --set mixer.telemetry.resources.requests.memory=128Mi \
+  --set galley.replicaCount=1 \
+  --set security.replicaCount=1 \
   --set gateways.enabled=false \
   --set prometheus.enabled=false \
+  --set sidecarInjectorWebhook.replicaCount=1 \
   istio-release/install/kubernetes/helm/istio > yaml/istio.yaml
 ```
 
@@ -103,6 +109,7 @@ helm template --name=istio --namespace istio-system \
   --values istio-release/install/kubernetes/helm/istio/values.yaml \
   --set enabled=true \
   --set hub=$LocalHub \
+  --set replicaCount=1 \
   istio-release/install/kubernetes/helm/istio/charts/prometheus > yaml/istio-prometheus.yaml
 
 # 安装
@@ -186,6 +193,7 @@ helm template --name=istio --namespace istio-system \
   --set hub=$LocalHub \
   --set createDemoSecret=true \
   --set dashboard.grafanaURL=http://grafana.sloth.com \
+  --set replicaCount=1 \
   istio-release/install/kubernetes/helm/istio/charts/kiali > yaml/istio-kiali.yaml
 
 # 安装
