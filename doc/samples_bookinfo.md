@@ -38,6 +38,8 @@ kubectl -n istio-samples exec -it \
 
 ## 定义入口网关配置
 
+- 配置 ingressgateway
+
 ```shell
 # 添加以下内容
 #     - uri:
@@ -50,25 +52,6 @@ kubectl get VirtualService -n istio-samples
 # 确定 ingress port 31380
 kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].nodePort}'
 curl -s http://172.17.8.101:31380/productpage | grep -o "<title>.*</title>"
-```
-
-## 配置 ingress
-
-- 权限配置
-
-```shell
-cat <<EOF | kubectl -n istio-samples apply -f -
-apiVersion: "authentication.istio.io/v1alpha1"
-kind: "Policy"
-metadata:
-  name: "productpage"
-spec:
-  targets:
-  - name: productpage
-  peers:
-  - mtls:
-      mode: PERMISSIVE
-EOF
 ```
 
 - 配置 ingress
@@ -94,13 +77,26 @@ EOF
 
 <http://bookinfo.sloth.com/productpage>
 
+## 权限配置
+
+```shell
+cat <<EOF | kubectl -n istio-samples apply -f -
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "Policy"
+metadata:
+  name: "productpage"
+spec:
+  targets:
+  - name: productpage
+  peers:
+  - mtls:
+      mode: PERMISSIVE
+EOF
+```
+
 ## 清除数据
 
 ```shell
-kubectl -n istio-samples delete ingress bookinfo
-kubectl -n istio-samples delete policy productpage
-kubectl -n istio-samples delete -f istio-release/samples/bookinfo/networking/bookinfo-gateway.yaml
-kubectl -n istio-samples delete -f istio-release/samples/bookinfo/platform/kube/bookinfo.yaml
 kubectl delete namespace istio-samples
 ```
 

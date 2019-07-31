@@ -1,5 +1,9 @@
 # 限制服务可见性
 
+## 前提条件
+
+## 配置
+
 ```shell
 cat <<EOF | kubectl -n istio-samples apply -f -
 apiVersion: networking.istio.io/v1alpha3
@@ -51,6 +55,8 @@ EOF
 ```
 
 ```shell
+sed -i '' "s/pstauffer\/curl/registry.sloth.com\/pstauffer\/curl/g" istio-release/samples/sleep/sleep.yaml
+
 cat <<EOF | kubectl apply -f -
 apiVersion: v1
 kind: Namespace
@@ -59,8 +65,6 @@ metadata:
  labels:
     istio-injection: enabled
 EOF
-
-sed -i '' "s/pstauffer\/curl/registry.sloth.com\/pstauffer\/curl/g" istio-release/samples/sleep/sleep.yaml
 
 kubectl -n istio-demo apply -f istio-release/samples/sleep/sleep.yaml
 
