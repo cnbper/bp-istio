@@ -69,11 +69,12 @@ helm template --name=istio --namespace istio-system \
   --set global.proxy.resources.requests.cpu=50m \
   --set global.proxy.resources.requests.memory=64Mi \
   --set global.policyCheckFailOpen=true \
+  --set pilot.autoscaleMin=1 \
   --set pilot.resources.requests.cpu=62m \
   --set pilot.resources.requests.memory=256Mi \
   --set pilot.traceSampling=100.0 \
-  --set mixer.policy.replicaCount=1 \
-  --set mixer.telemetry.replicaCount=1 \
+  --set mixer.policy.autoscaleMin=1 \
+  --set mixer.telemetry.autoscaleMin=1 \
   --set mixer.telemetry.resources.requests.cpu=125m \
   --set mixer.telemetry.resources.requests.memory=128Mi \
   --set galley.replicaCount=1 \
@@ -185,15 +186,20 @@ EOF
 ### kiali
 
 ```shell
+rm -rf istio-release/install/kubernetes/helm/istio/charts/kiali
+cp -r /Users/zhangbaohao/software/golang/workspace/src/istio.io/istio/install/kubernetes/helm/istio/charts/kiali istio-release/install/kubernetes/helm/istio/charts/kiali
+
 cp istio-release/install/kubernetes/helm/istio/templates/_affinity.tpl istio-release/install/kubernetes/helm/istio/charts/kiali/templates/_affinity.tpl
 
 helm template --name=istio --namespace istio-system \
   --values istio-release/install/kubernetes/helm/istio/values.yaml \
   --set enabled=true \
   --set hub=$LocalHub \
+  --set tag=v1.1.0 \
   --set createDemoSecret=true \
   --set dashboard.grafanaURL=http://grafana.sloth.com \
   --set replicaCount=1 \
+  --set security.enabled=false \
   istio-release/install/kubernetes/helm/istio/charts/kiali > yaml/istio-kiali.yaml
 
 # 安装

@@ -17,7 +17,7 @@ EOF
 # kubectl label namespace istio-samples istio-injection=enabled --overwrite
 
 # 调整镜像地址
-sed -i '' "s/istio\/examples-bookinfo/registry.sloth.com\/ipaas\/examples-bookinfo/g" istio-release/samples/bookinfo/platform/kube/bookinfo.yaml
+sed -i '' "s/docker.io\/istio/registry.sloth.com\/ipaas/g" istio-release/samples/bookinfo/platform/kube/bookinfo.yaml
 # 安装
 kubectl -n istio-samples apply -f istio-release/samples/bookinfo/platform/kube/bookinfo.yaml
 
