@@ -18,6 +18,8 @@ EOF
 
 # 调整镜像地址
 sed -i '' "s/docker.io\/istio/registry.sloth.com\/ipaas/g" istio-release/samples/bookinfo/platform/kube/bookinfo.yaml
+# 调整镜像版本
+sed -i '' "s/1.15.0/1.12.0/g" istio-release/samples/bookinfo/platform/kube/bookinfo.yaml
 # 安装
 kubectl -n istio-samples apply -f istio-release/samples/bookinfo/platform/kube/bookinfo.yaml
 
