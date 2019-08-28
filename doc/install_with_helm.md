@@ -64,6 +64,7 @@ LocalHub=registry.sloth.com/ipaas
 # 最小安装
 helm template --name=istio --namespace istio-system \
   --set global.hub=$LocalHub \
+  --set global.enableTracing=true \
   --set global.tracer.zipkin.address="zipkin.istio-system:9411" \
   --set global.proxy.accessLogFile="/dev/stdout" \
   --set global.proxy.resources.requests.cpu=50m \
