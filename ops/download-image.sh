@@ -1,7 +1,7 @@
 RemoteRegistry=registry.sloth.com/ipaas
 
-IstioCurrentVersion=1.2.3
-IstioOldVersion=1.2.2
+IstioCurrentVersion=1.3.0
+IstioOldVersion=1.2.5
 istio_modules=("proxy_init" "proxyv2" "kubectl" "galley" "mixer" "pilot" "citadel" "sidecar_injector" "node-agent-k8s")
 
 for module in ${istio_modules[*]}
@@ -26,13 +26,13 @@ done
 # docker push ${RemoteRegistry}/grafana:${GrafanaCurrentVersion}
 # docker rmi ${RemoteRegistry}/grafana:${GrafanaCurrentVersion}
 
-# KialiCurrentVersion=v1.1.0
+# KialiCurrentVersion=v1.4
 # docker pull docker.io/kiali/kiali:${KialiCurrentVersion}
 # docker tag docker.io/kiali/kiali:${KialiCurrentVersion} ${RemoteRegistry}/kiali:${KialiCurrentVersion}
 # docker push ${RemoteRegistry}/kiali:${KialiCurrentVersion}
 # docker rmi ${RemoteRegistry}/kiali:${KialiCurrentVersion}
 
-# OpenzipkinVersion=2
+# OpenzipkinVersion=2.14.2
 # docker pull docker.io/openzipkin/zipkin:${OpenzipkinVersion}
 # docker tag docker.io/openzipkin/zipkin:${OpenzipkinVersion} ${RemoteRegistry}/zipkin:${OpenzipkinVersion}
 # docker push ${RemoteRegistry}/zipkin:${OpenzipkinVersion}
@@ -68,3 +68,8 @@ done
 # docker tag pstauffer/curl ${RemoteRegistry}/curl
 # docker push ${RemoteRegistry}/curl
 # docker rmi ${RemoteRegistry}/curl
+
+# docker pull governmentpaas/curl-ssl
+# docker tag governmentpaas/curl-ssl ${RemoteRegistry}/curl-ssl
+# docker push ${RemoteRegistry}/curl-ssl
+# docker rmi ${RemoteRegistry}/curl-ssl

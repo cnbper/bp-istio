@@ -61,12 +61,13 @@ kubectl delete -f istio-release/install/kubernetes/helm/istio-init/files
 # 构建yaml文件
 LocalHub=registry.sloth.com/ipaas
 
-# 最小安装
+# 最小安装 /dev/stdout
+# --set global.tracer.zipkin.address="zipkin.istio-system:9411" \
 helm template --name=istio --namespace istio-system \
   --set global.hub=$LocalHub \
   --set global.enableTracing=true \
-  --set global.tracer.zipkin.address="zipkin.istio-system:9411" \
   --set global.proxy.accessLogFile="/dev/stdout" \
+  --set global.proxy.accessLogFormat="" \
   --set global.proxy.resources.requests.cpu=50m \
   --set global.proxy.resources.requests.memory=64Mi \
   --set global.policyCheckFailOpen=true \
@@ -84,6 +85,9 @@ helm template --name=istio --namespace istio-system \
   --set prometheus.enabled=false \
   --set sidecarInjectorWebhook.replicaCount=1 \
   istio-release/install/kubernetes/helm/istio > yaml/istio.yaml
+
+# 调整访问日志格式
+# "[sidecar-proxy-access] [%START_TIME%] \"%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%\" %RESPONSE_CODE% %RESPONSE_FLAGS% \"%DYNAMIC_METADATA(istio.mixer:status)%\" \"%UPSTREAM_TRANSPORT_FAILURE_REASON%\" %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% \"%REQ(X-FORWARDED-FOR)%\" \"%REQ(USER-AGENT)%\" \"%REQ(X-REQUEST-ID)%\" \"%REQ(:AUTHORITY)%\" \"%UPSTREAM_HOST%\" %UPSTREAM_CLUSTER% %UPSTREAM_LOCAL_ADDRESS% %DOWNSTREAM_LOCAL_ADDRESS% %DOWNSTREAM_REMOTE_ADDRESS% \"%REQUESTED_SERVER_NAME%\"\n"
 ```
 
 - **部署 Istio 控制面**
@@ -187,8 +191,8 @@ EOF
 ### kiali
 
 ```shell
-rm -rf istio-release/install/kubernetes/helm/istio/charts/kiali
-cp -r /Users/zhangbaohao/software/golang/workspace/src/istio.io/istio/install/kubernetes/helm/istio/charts/kiali istio-release/install/kubernetes/helm/istio/charts/kiali
+# rm -rf istio-release/install/kubernetes/helm/istio/charts/kiali
+# cp -r /Users/zhangbaohao/software/golang/workspace/src/istio.io/istio/install/kubernetes/helm/istio/charts/kiali istio-release/install/kubernetes/helm/istio/charts/kiali
 
 cp istio-release/install/kubernetes/helm/istio/templates/_affinity.tpl istio-release/install/kubernetes/helm/istio/charts/kiali/templates/_affinity.tpl
 
@@ -196,9 +200,9 @@ helm template --name=istio --namespace istio-system \
   --values istio-release/install/kubernetes/helm/istio/values.yaml \
   --set enabled=true \
   --set hub=$LocalHub \
-  --set tag=v1.1.0 \
   --set createDemoSecret=true \
   --set dashboard.grafanaURL=http://grafana.sloth.com \
+  --set prometheusAddr=http://prometheus:9090 \
   --set replicaCount=1 \
   --set security.enabled=false \
   istio-release/install/kubernetes/helm/istio/charts/kiali > yaml/istio-kiali.yaml
