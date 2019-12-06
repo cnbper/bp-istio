@@ -1,0 +1,20 @@
+@startuml pilot-input-output
+title Pilot的输入与输出
+
+left to right direction
+
+rectangle Envoy
+
+rectangle Pilot
+Pilot-->Envoy: xDS
+
+database DCS [
+    Config Storage
+]
+DCS-->Pilot
+
+database DSR [
+    Service Registry
+]
+DSR-->Pilot
+@enduml

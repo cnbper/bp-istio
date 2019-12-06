@@ -1,0 +1,40 @@
+@startuml pilot-discovery
+title Pilot-Discovery代码结构
+left to right direction
+skinparam componentStyle uml2
+
+[main] --> [Discovery Server]
+note top of [main] : pilot/cmd/pilot-discovery/main.go
+note bottom of [Discovery Server] : pilot/pkg/bootstrap/server.go
+
+[Discovery Server] --> [Cert Controller]
+
+[Discovery Server] --> [Config Controller]
+[Config Controller] --> [MCP Config Controller]
+[Config Controller] --> [Kube Config Controller]
+[Config Controller] --> [Memory Config Controller]
+
+[Discovery Server] --> [Service Controller]
+[Service Controller] --> [MCP Service Registry]
+[Service Controller] --> [Kube Service Registry]
+[Service Controller] --> [Consul Service Registry]
+[Service Controller] --> [Memory Service Registry]
+
+[Discovery Server] --> [Discovery Service]
+[Discovery Service] --> [V2 Discovery Server]
+[V2 Discovery Server] <--> [Envoy] : GRPC
+note left of [V2 Discovery Server] : pilot/pkg/proxy/v2/discovery.go
+
+component AggregatedDiscoveryServer [
+    AggregatedDiscoveryServer
+    (ADS Interface)
+]
+[V2 Discovery Server] .right.> [AggregatedDiscoveryServer] : Implement
+
+[Discovery Server] --> [Monitor]
+
+[Discovery Server] --> [Cluster Registries]
+
+[Config Controller] ..> [V2 Discovery Server] : Config Changes
+[Service Controller] ..> [V2 Discovery Server] : Service Changes
+@enduml

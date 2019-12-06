@@ -1,0 +1,66 @@
+@startuml
+title architecture
+package model {
+	class Service {
+		Attributes      ServiceAttributes
+		Ports           PortList
+		ServiceAccounts []string
+		CreationTime    time.Time
+		Hostname        host.Name
+		Address         string
+		ClusterVIPs     map[string]string
+		Resolution      Resolution
+		MeshExternal    bool
+
+		External() bool
+		GetServiceAddressForProxy(node *Proxy) string
+	}
+
+	class NetworkEndpoint {
+		Family      AddressFamily
+		Address     string
+		Port        int
+		ServicePort *Port
+		UID         string
+		Network     string
+		Locality    string
+		LbWeight    uint32
+	}
+
+	class ServiceInstance {
+		Endpoint       NetworkEndpoint
+		Service        *Service
+		Labels         labels.Instance
+		ServiceAccount string
+		MTLSReady      bool
+	}
+	Service *-- ServiceInstance
+	NetworkEndpoint *-- ServiceInstance
+
+	interface ServiceDiscovery {
+		Services() ([]*Service, error)
+		GetService(hostname host.Name) (*Service, error)
+		InstancesByPort(svc *Service, servicePort int, labels labels.Collection) ([]*ServiceInstance, error)
+		GetProxyServiceInstances(*Proxy) ([]*ServiceInstance, error)
+		GetProxyWorkloadLabels(*Proxy) (labels.Collection, error)
+		ManagementPorts(addr string) PortList
+		WorkloadHealthCheckInfo(addr string) ProbeList
+		GetIstioServiceAccounts(svc *Service, ports []int) []string
+	}
+	ServiceDiscovery ..> ServiceInstance
+	ServiceDiscovery ..> Service
+}
+
+package aggregate #DDDDDD {
+	class Registry {
+		Name serviceregistry.ServiceRegistry
+		ClusterID string
+		model.Controller
+		model.ServiceDiscovery
+	}
+
+	class Controller {
+
+	}
+}
+@enduml

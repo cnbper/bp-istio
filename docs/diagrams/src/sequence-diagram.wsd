@@ -1,0 +1,71 @@
+@startuml
+title Service Registry初始化流程
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+skinparam sequenceParticipant underline
+
+participant "pilot-discovery.main" as PDM
+participant "bootstrap.server" as BS
+participant "serviceregistry.aggregate.Controller" as SAC
+participant "serviceregistry.kube.Controller" as SKC
+participant "serviceregistry.consul.Controller" as SCC
+participant "serviceregistry.external.servicediscovery" as SES
+== Initialization ==
+
+PDM -> BS: NewServer
+activate BS
+
+BS -> BS: initKubeClient
+BS -> BS: initMesh
+BS -> BS: initMeshNetworks
+BS -> BS: initCertController
+BS -> BS: initConfigController
+
+BS -> BS: initServiceControllers
+    activate BS
+
+    BS -> SAC: NewController
+
+    loop args.Service.Registries
+        alt MockRegistry
+            BS -> BS: initMemoryRegistry
+            activate BS
+            BS -> SAC: AddRegistry
+            deactivate BS
+        else KubernetesRegistry
+            BS -> BS: createK8sServiceControllers
+            activate BS
+            BS -> SAC: AddRegistry
+            deactivate BS
+        else ConsulRegistry
+            BS -> BS: initConsulRegistry
+            activate BS
+            BS -> SAC: AddRegistry
+            deactivate BS
+        else MCPRegistry
+            BS -> SAC: AddRegistry
+        end
+    end
+
+    BS -> SES: NewServiceDiscovery
+    SES --> BS: ServiceEntryStoreCreated
+    BS -> SAC: AddRegistry
+    
+    deactivate BS
+
+BS -> BS: initDiscoveryService
+BS -> BS: initMonitor
+BS -> BS: initClusterRegistries
+
+BS -> PDM: ServerCreated
+deactivate BS
+
+== Start ==
+
+PDM -> BS: Start
+activate BS
+
+BS -> PDM: Done
+deactivate BS
+@enduml

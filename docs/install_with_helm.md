@@ -10,10 +10,12 @@
 ```shell
 # 构建yaml文件
 LocalHub=registry.sloth.com/ipaas
+IstioTag=1.4.0-dev
 
 # yaml/istio-init.yaml
 helm template --name=istio-init --namespace istio-system \
   --set global.hub=$LocalHub \
+  --set global.tag=$IstioTag \
   --set certmanager.enabled=true \
   istio-release/install/kubernetes/helm/istio-init > yaml/istio-init.yaml
 ```
@@ -39,6 +41,8 @@ EOF
 kubectl apply -f yaml/istio-init.yaml
 
 # 验证 28
+kubectl -n istio-system wait --for=condition=complete job --all
+kubectl -n istio-system get pod
 kubectl get crds | grep 'istio.io\|certmanager.k8s.io' | wc -l
 
 # 删除无用安装文件
@@ -60,25 +64,31 @@ kubectl delete -f istio-release/install/kubernetes/helm/istio-init/files
 ```shell
 # 构建yaml文件
 LocalHub=registry.sloth.com/ipaas
+IstioTag=1.4.0
 
 # 最小安装 /dev/stdout
 # --set global.tracer.zipkin.address="zipkin.istio-system:9411" \
+# --set pilot.traceSampling=100.0 \
+# --set global.outboundTrafficPolicy.mode=REGISTRY_ONLY \
 helm template --name=istio --namespace istio-system \
   --set global.hub=$LocalHub \
-  --set global.enableTracing=true \
+  --set global.tag=$IstioTag \
+  --set global.enableTracing=false \
   --set global.proxy.accessLogFile="/dev/stdout" \
   --set global.proxy.accessLogFormat="" \
   --set global.proxy.resources.requests.cpu=50m \
   --set global.proxy.resources.requests.memory=64Mi \
   --set global.policyCheckFailOpen=true \
+  --set global.imagePullPolicy=Always \
+  --set global.outboundTrafficPolicy.mode=ALLOW_ANY \
   --set pilot.autoscaleMin=1 \
   --set pilot.resources.requests.cpu=62m \
   --set pilot.resources.requests.memory=256Mi \
-  --set pilot.traceSampling=100.0 \
   --set mixer.policy.autoscaleMin=1 \
   --set mixer.telemetry.autoscaleMin=1 \
   --set mixer.telemetry.resources.requests.cpu=125m \
   --set mixer.telemetry.resources.requests.memory=128Mi \
+  --set mixer.adapters.prometheus.metricsExpiryDuration=2m \
   --set galley.replicaCount=1 \
   --set security.replicaCount=1 \
   --set gateways.enabled=false \

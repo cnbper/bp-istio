@@ -1,0 +1,25 @@
+@startuml pilot-discovery-receive-connection
+skinparam sequenceArrowThickness 2
+skinparam maxmessagesize 60
+skinparam sequenceParticipant underline
+
+== Receive Connections ==
+
+PilotServer -> "GRPC Server": Create
+DiscoveryServer -> "GRPC Server": RegisterService
+note left
+pilot/pkg/proxy/envoy/v2/discovery.go
+DiscoveryServer.Register
+end note
+
+...
+
+Envoy -> "GRPC Server": GRPC
+"GRPC Server" -> DiscoveryServer: callback
+note left
+pilot/pkg/proxy/envoy/v2/ads.go
+DiscoveryServer.StreamAggregatedResources
+end note
+
+DiscoveryServer -> XdsConnection: Create
+@enduml

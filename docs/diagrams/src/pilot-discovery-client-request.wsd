@@ -1,0 +1,53 @@
+@startuml pilot-discovery-client-request
+skinparam sequenceArrowThickness 2
+skinparam maxmessagesize 60
+skinparam sequenceParticipant underline
+
+participant DiscoveryServer order 1
+participant XdsConnection order 2
+participant ReqChannel order 3
+participant Envoy order 4
+
+== client Request ==
+
+Envoy -> XdsConnection: DiscoveryRequest
+DiscoveryServer -> XdsConnection: Receive
+note left
+pilot/pkg/proxy/envoy/v2/ads.go
+receiveThread
+end note
+return DscoveryRequest
+DiscoveryServer -> ReqChannel: DiscoveryRequest
+
+...
+
+DiscoveryServer -> ReqChannel: GetRequest
+activate DiscoveryServer
+return DiscoveryRequest
+
+alt Request Type
+
+	DiscoveryServer -> DiscoveryServer: pushCDS
+	DiscoveryServer -> XdsConnection: send(DiscoveryResponse)
+	XdsConnection -> Envoy: DiscoveryResponse
+
+else Listener Request
+
+	DiscoveryServer -> DiscoveryServer: pushLDS
+	DiscoveryServer -> XdsConnection: send(DiscoveryResponse)
+	XdsConnection -> Envoy: DiscoveryResponse
+
+else Endpoint Request
+
+	DiscoveryServer -> DiscoveryServer: pushEDS
+	DiscoveryServer -> XdsConnection: send(DiscoveryResponse)
+	XdsConnection -> Envoy: DiscoveryResponse
+
+else Route Request
+
+	DiscoveryServer -> DiscoveryServer: pushRoute
+	DiscoveryServer -> XdsConnection: send(DiscoveryResponse)
+	XdsConnection -> Envoy: DiscoveryResponse
+
+end
+@enduml

@@ -33,3 +33,5 @@ ns=foo && kubectl -n $ns exec $(kubectl -n $ns get pods -l app=httpbin -o jsonpa
 ### [warning][config] [bazel-out/k8-opt/bin/external/envoy/source/common/config/_virtual_includes/grpc_stream_lib/common/config/grpc_stream.h:86] gRPC config stream closed: 14, upstream connect error or disconnect/reset before headers. reset reason: connection failure
 
 - 解决方案
+
+## upstream connect error or disconnect/reset before headers. reset reason: connection failure

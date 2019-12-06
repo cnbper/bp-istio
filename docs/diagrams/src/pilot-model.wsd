@@ -1,0 +1,179 @@
+@startuml pilot-config
+package model.config {
+    class ConfigMeta {
+		Type string
+	    Group string
+        Version string
+        Name string
+        Namespace string
+        Domain string
+        Labels map[string]string
+        Annotations map[string]string
+        ResourceVersion string
+        CreationTimestamp time.Time
+
+        Key() string
+	}
+    class Config {
+		ConfigMeta
+	    Spec proto.Message
+	}
+    ConfigMeta <|-- Config
+
+    interface ConfigStore {
+        ConfigDescriptor() ConfigDescriptor
+        Get(typ, name, namespace string) *Config
+        List(typ, namespace string) ([]Config, error)
+        Create(config Config) (revision string, err error)
+        Update(config Config) (newRevision string, err error)
+        Delete(typ, name, namespace string) error
+    }
+    interface ConfigStoreCache {
+        ConfigStore
+
+        RegisterEventHandler(typ string, handler func(Config, Event))
+        Run(stop <-chan struct{})
+        HasSynced() bool
+    }
+    ConfigStore <|-- ConfigStoreCache
+
+    class ProtoSchema {
+        ClusterScoped bool
+        SchemaObjectName string
+        Type string
+        Plural string
+        Group string
+        Version string
+        MessageName string
+        Validate validation.ValidateFunc
+        Collection string
+    }
+    class ConfigDescriptor {
+        []ProtoSchema
+
+        Types() []string
+        GetByType(name string)
+    }
+    ProtoSchema <|-- ConfigDescriptor
+
+    interface IstioConfigStore {
+	    ConfigStore
+
+	    ServiceEntries() []Config
+	    Gateways(workloadLabels labels.Collection) []Config
+	    EnvoyFilter(workloadLabels labels.Collection) *Config
+	    HTTPAPISpecByDestination(instance *ServiceInstance) []Config
+	    QuotaSpecByDestination(instance *ServiceInstance) []Config
+	    AuthenticationPolicyForWorkload(service *Service, labels labels.Instance, port *Port) *Config
+	    ServiceRoles(namespace string) []Config
+	    ServiceRoleBindings(namespace string) []Config
+	    RbacConfig() *Config
+	    ClusterRbacConfig() *Config
+    }
+    ConfigStore <|-- IstioConfigStore
+
+    class istioConfigStore {
+        ConfigStore
+    }
+    ConfigStore <|-- istioConfigStore
+    IstioConfigStore <|.. istioConfigStore
+}
+
+package model.service {
+    class Service {
+        Hostname host.Name
+        Address string
+        Mutex sync.RWMutex
+        ClusterVIPs map[string]string
+        Ports PortList
+        ServiceAccounts []string
+        MeshExternal bool
+        Resolution Resolution
+        CreationTime time.Time
+        Attributes ServiceAttributes
+    }
+    enum Resolution {
+        ClientSideLB
+        DNSLB
+        Passthrough
+    }
+    enum AddressFamily {
+        AddressFamilyTCP
+        AddressFamilyUnix
+    }
+    enum TrafficDirection {
+        TrafficDirectionInbound
+        TrafficDirectionOutbound
+    }
+    class Port {
+        Name string
+        Port int
+        Protocol protocol.Instance
+    }
+    class Probe {
+        Port *Port
+        Path string
+    }
+    Port *-- Probe
+
+    class NetworkEndpoint {
+        Family AddressFamily
+        Address string
+        Port int
+        ServicePort *Port
+        UID string
+        Network string
+        Locality string
+        LbWeight uint32
+    }
+    Port *-- NetworkEndpoint
+
+    class ServiceInstance {
+        Endpoint       NetworkEndpoint
+	    Service        *Service
+	    Labels         labels.Instance
+	    ServiceAccount string
+
+        GetLocality() string
+    }
+    NetworkEndpoint *-- ServiceInstance
+    Service *-- ServiceInstance
+
+    class ServiceAttributes {
+        ServiceRegistry string
+        Name string
+        Namespace string
+        UID string
+        ExportTo map[visibility.Instance]bool
+        ClusterExternalAddresses map[string][]string
+    }
+    class IstioEndpoint {
+        Labels map[string]string
+        Family AddressFamily
+        Address string
+        ServicePortName string
+        UID string
+        EnvoyEndpoint *endpoint.LbEndpoint
+        ServiceAccount string
+        Network string
+        Locality string
+        EndpointPort uint32
+        LbWeight uint32
+        Attributes ServiceAttributes
+    }
+    ServiceAttributes *-- IstioEndpoint
+
+    interface ServiceDiscovery {
+        Services() ([]*Service, error)
+        GetService(hostname host.Name) (*Service, error)
+        InstancesByPort(svc *Service, servicePort int, labels labels.Collection) ([]*ServiceInstance, error)
+        GetProxyServiceInstances(*Proxy) ([]*ServiceInstance, error)
+        GetProxyWorkloadLabels(*Proxy) (labels.Collection, error)
+        ManagementPorts(addr string) PortList
+        WorkloadHealthCheckInfo(addr string) ProbeList
+        GetIstioServiceAccounts(svc *Service, ports []int) []string
+    }
+    ServiceDiscovery ..> ServiceInstance
+	ServiceDiscovery ..> Service
+}
+@enduml

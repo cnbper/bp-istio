@@ -1,0 +1,16 @@
+@startuml pilot-discovery-initialization
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 20
+skinparam maxmessagesize 60
+skinparam sequenceParticipant underline
+
+== Initialization ==
+
+PilotServer -> ConfigController: Create
+PilotServer -> ServiceController: Create
+PilotServer -> DiscoveryServer: Create
+
+DiscoveryServer -> ConfigController: RegisterEventHandler
+DiscoveryServer -> ServiceController: AppendServiceHandler
+DiscoveryServer -> ServiceController: AppendInstanceHandler
+@enduml

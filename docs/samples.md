@@ -4,10 +4,22 @@
 # 调整镜像地址
 sed -i '' "s/docker.io\/kennethreitz/registry.sloth.com\/ipaas/g" istio-release/samples/httpbin/httpbin.yaml
 sed -i '' "s/governmentpaas/registry.sloth.com\/ipaas/g" istio-release/samples/sleep/sleep.yaml
+```
 
-kubectl create ns samples
-kubectl apply -f <(istioctl kube-inject -f istio-release/samples/httpbin/httpbin.yaml) -n samples
-kubectl apply -f <(istioctl kube-inject -f istio-release/samples/sleep/sleep.yaml) -n samples
+## samples-1
+
+```shell
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: Namespace
+metadata:
+ name: samples
+ labels:
+    istio-injection: enabled
+EOF
+
+kubectl -n samples apply -f istio-release/samples/httpbin/httpbin.yaml
+kubectl -n samples apply -f istio-release/samples/sleep/sleep.yaml
 
 cat <<EOF | kubectl -n samples apply -f -
 apiVersion: extensions/v1beta1
@@ -28,9 +40,151 @@ EOF
 kubectl -n samples exec $(kubectl -n samples get pod -l app=sleep -o jsonpath={.items..metadata.name}) -c sleep -- curl -sL -o /dev/null -D - http://httpbin.samples:8000/ip
 
 kubectl delete ns samples
+
+kubectl delete -f istio-release/samples/sleep/sleep.yaml
+cat <<EOF | kubectl -n samples delete -f -
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpbin-v1
+  labels:
+    app: httpbin
+spec:
+  ports:
+  - name: http
+    port: 8000
+    targetPort: 80
+  selector:
+    app: httpbin
+EOF
+kubectl apply -f istio-release/samples/httpbin/httpbin.yaml
 ```
 
 访问：<http://httpbin.sloth.com>
+
+## samples-2
+
+```shell
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: Namespace
+metadata:
+ name: samples-1
+ labels:
+    istio-injection: enabled
+EOF
+kubectl -n samples-1 apply -f istio-release/samples/httpbin/httpbin.yaml
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: Namespace
+metadata:
+ name: samples-2
+ labels:
+    istio-injection: enabled
+EOF
+kubectl -n samples-2 apply -f istio-release/samples/sleep/sleep.yaml
+
+cat <<EOF | kubectl -n samples-1 apply -f -
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: httpbin
+spec:
+  rules:
+  - host: httpbin.sloth.com
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: httpbin
+          servicePort: http
+EOF
+
+kubectl -n samples-2 exec $(kubectl -n samples-2 get pod -l app=sleep -o jsonpath={.items..metadata.name}) -c sleep -- curl -sL -o /dev/null -D - http://httpbin.samples-1:8000/ip
+
+kubectl delete ns samples-1 samples-2
+```
+
+- 访问：<http://httpbin.sloth.com>
+
+- 限制服务可见性
+
+```shell
+kubectl -n istio-system get configmap istio -o yaml | sed 's/mode: ALLOW_ANY/mode: REGISTRY_ONLY/g' | kubectl replace -n istio-system -f -
+
+# 测试
+istioctl -n samples-2 proxy-config clusters sleep-6ff9df6ddf-j6trf | grep httpbin
+kubectl -n samples-2 exec $(kubectl -n samples-2 get pod -l app=sleep -o jsonpath={.items..metadata.name}) -c sleep -- curl -sL -o /dev/null -D - http://httpbin.samples-1:8000/ip
+curl http://httpbin.sloth.com/
+
+# case 1
+# networking.istio.io/exportTo: "."
+kubectl -n samples-1 apply -f istio-release/samples/httpbin/httpbin.yaml
+
+# case 2
+cat <<EOF | kubectl -n samples-2 apply -f -
+apiVersion: networking.istio.io/v1alpha3
+kind: Sidecar
+metadata:
+  name: default
+spec:
+  egress:
+  - hosts:
+    - "./*"
+    - "istio-system/*"
+EOF
+cat <<EOF | kubectl -n samples-2 apply -f -
+apiVersion: networking.istio.io/v1alpha3
+kind: Sidecar
+metadata:
+  name: default
+spec:
+  outboundTrafficPolicy:
+    mode: ALLOW_ANY
+  egress:
+  - hosts:
+    - "./*"
+    - "istio-system/*"
+EOF
+
+# case 3
+cat <<EOF | kubectl -n samples-1 apply -f -
+apiVersion: networking.istio.io/v1alpha3
+kind: Sidecar
+metadata:
+  name: default
+spec:
+  ingress:
+  - port:
+      number: 8001
+      protocol: HTTP
+      name: somename
+    defaultEndpoint: unix:///var/run/someuds.sock
+  egress:
+  - hosts:
+    - "./*"
+    - "istio-system/*"
+EOF
+
+
+
+
+cat <<EOF | kubectl -n samples-1 apply -f -
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: default
+spec:
+  hosts: httpbin.samples-1
+  exportTo:
+  - "."
+  trafficPolicy:
+    tls:
+      mode: DISABLE
+EOF
+
+
+```
 
 ## 灰度测试-1
 
@@ -137,6 +291,13 @@ spec:
   hosts:
   - httpbin
   http:
+  - match:
+    - headers:
+        role:
+          exact: gray1
+    route:
+    - destination:
+        host: httpbin-v2
   - route:
     - destination:
         host: httpbin

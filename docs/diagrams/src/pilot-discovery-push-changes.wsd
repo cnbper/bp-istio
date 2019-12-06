@@ -1,0 +1,86 @@
+@startuml pilot-discovery-push-changes
+skinparam sequenceArrowThickness 2
+skinparam maxmessagesize 60
+skinparam sequenceParticipant underline
+
+participant ConfigController order 1
+participant ServiceController order 2
+participant DiscoveryServer order 3
+participant PushChannel order 4
+participant PushQueue order 5
+participant XdsConnection.pushChannel order 6
+participant XdsConnection order 7
+participant Envoy order 8
+
+== Service Change ==
+
+ServiceController --> DiscoveryServer: ConfigUpdate
+activate DiscoveryServer
+
+DiscoveryServer -> PushChannel: PushRequest(ServiceEntry)
+deactivate DiscoveryServer
+
+== Config Change ==
+
+ConfigController --> DiscoveryServer: ConfigUpdate
+activate DiscoveryServer
+
+DiscoveryServer -> PushChannel: PushRequest(Routing Rules, etc.)
+deactivate DiscoveryServer
+
+== debounce ==
+
+DiscoveryServer -> PushChannel: GetPushRequest
+note left
+pilot/pkg/proxy/envoy/v2/discovery.go
+DiscoveryServer.debounce
+end note
+activate DiscoveryServer
+return PushRequest
+
+DiscoveryServer -> DiscoveryServer: MergePushRequest
+DiscoveryServer -> PushQueue: Enqueue(XdsConnection,PushRequest)
+deactivate DiscoveryServer
+
+== sendPushes ==
+
+DiscoveryServer -> PushQueue: Dequeue
+note left
+pilot/pkg/proxy/envoy/v2/discovery.go
+DiscoveryServer.sendPushes
+end note
+activate DiscoveryServer
+return XdsConnection,PushRequest
+
+DiscoveryServer -> XdsConnection.pushChannel: XdsEvent
+deactivate DiscoveryServer
+
+...
+
+DiscoveryServer -> XdsConnection.pushChannel: GetPushEvent
+note left
+pilot/pkg/proxy/envoy/v2/ads.go
+DiscoveryServer.StreamAggregatedResources
+end note
+activate DiscoveryServer
+return PushEvent
+
+DiscoveryServer -> DiscoveryServer: pushConnection(XdsConnection,PushRequest)
+activate DiscoveryServer
+
+DiscoveryServer -> DiscoveryServer: pushCDS
+DiscoveryServer -> XdsConnection: send(DiscoveryResponse)
+XdsConnection -> Envoy: DiscoveryResponse
+
+DiscoveryServer -> DiscoveryServer: pushEDS
+DiscoveryServer -> XdsConnection: send(DiscoveryResponse)
+XdsConnection -> Envoy: DiscoveryResponse
+
+DiscoveryServer -> DiscoveryServer: pushLDS
+DiscoveryServer -> XdsConnection: send(DiscoveryResponse)
+XdsConnection -> Envoy: DiscoveryResponse
+
+DiscoveryServer -> DiscoveryServer: pushRoute
+DiscoveryServer -> XdsConnection: send(DiscoveryResponse)
+XdsConnection -> Envoy: DiscoveryResponse
+@enduml

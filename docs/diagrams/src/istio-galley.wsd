@@ -1,0 +1,135 @@
+@startuml galley
+package istio.io/pkg/probe {
+    interface Controller {
+		io.Closer
+		Start()
+		register(p *Probe, initial error)
+		onChange(p *Probe, newStatus error)
+    }
+}
+
+package galley/pkg/server/process {
+    interface Component {
+        Start() error
+        Stop()
+    }
+    class component {
+        startFn
+	    stopFn
+
+        Start() error
+        Stop()
+    }
+    Component <|.. component
+
+    class Host {
+        mu         sync.Mutex
+	    started    bool
+	    components []Component
+
+        Add(c Component)
+        Start() error
+        Stop()
+    }
+    Component <|.. Host
+}
+
+package galley/pkg/server/components {
+    class Processing {
+        args *settings.Args
+
+    	distributor  *snapshot.Cache
+    	configzTopic fw.Topic
+
+    	serveWG       sync.WaitGroup
+    	grpcServer    *grpc.Server
+    	processor     *runtime.Processor
+    	mcpSource     *source.Server
+    	reporter      monitoring.Reporter
+    	callOut       *callout
+    	listenerMutex sync.Mutex
+    	listener      net.Listener
+    	stopCh        chan struct{}
+
+        Start() (err error)
+        Stop()
+        ConfigZTopic() fw.Topic
+        getServerGrpcOptions() []grpc.ServerOption
+        createSource(mesh meshconfig.Cache) (src runtime.Source, err error)
+        getSourceSchema() *schema.Instance
+        isKindExcluded(kind string) bool
+        getMCPTypes() *resource.Schema
+        getListener() net.Listener
+        Address() net.Addr
+    }
+    Component <|.. Processing
+    class Processing2 {
+		args *settings.Args
+
+		mcpCache     *snapshot.Cache
+		configzTopic fw.Topic
+
+		k kube.Interfaces
+
+		serveWG       sync.WaitGroup
+		grpcServer    *grpc.Server
+		runtime       *processing.Runtime
+		mcpSource     *source.Server
+		reporter      monitoring.Reporter
+		callOut       *callout
+		listenerMutex sync.Mutex
+		listener      net.Listener
+		stopCh        chan struct{}
+
+        Start() (err error)
+        Stop()
+        disableExcludedKubeResources(m *schema.Metadata) schema.KubeResources
+        ConfigZTopic() fw.Topic
+        getServerGrpcOptions() []grpc.ServerOption
+        getKubeInterfaces() (k kube.Interfaces, err error)
+        createSource(resources schema.KubeResources) (src event.Source, err error)
+        isKindExcluded(kind string) bool
+        getListener() net.Listener
+        Address() net.Addr
+    }
+    Component <|.. Processing2
+
+    class Probe {
+        controller probe.Controller
+	    running    bool
+
+        Controller() probe.Controller
+        Start() error
+        Stop()
+    }
+    Component <|.. Probe
+    Controller *-- Probe
+
+    class Ctrlz {
+        options *ctrlz.Options
+        topics  []fw.Topic
+        server  *ctrlz.Server
+
+        Start() error
+        Stop()
+        Address() string
+    }
+    Component <|.. Ctrlz
+}
+
+package galley/pkg/server {
+    class Server {
+        host process.Host
+        p  *components.Processing
+	    p2 *components.Processing2
+
+        Address() net.Addr
+        Start() error
+        Stop()
+    }
+    Host *-- Server
+    Processing *-- Server
+    Processing2 *-- Server
+    Component <|.. Server
+}
+@enduml
