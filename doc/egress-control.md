@@ -19,102 +19,13 @@ kubectl -n istio-samples apply -f istio-release/samples/sleep/sleep.yaml
 export SOURCE_POD=$(kubectl -n istio-samples get pod -l app=sleep -o jsonpath={.items..metadata.name})
 ```
 
-## ALLOW_ANY
 
-```shell
-kubectl get configmap istio -n istio-system -o yaml | grep -o "mode: ALLOW_ANY"
 
-kubectl get configmap istio -n istio-system -o yaml | sed 's/mode: REGISTRY_ONLY/mode: ALLOW_ANY/g' | kubectl replace -n istio-system -f -
 
-# 等待下发成功后
-kubectl -n istio-samples exec -it $SOURCE_POD -c sleep -- curl -I https://edition.cnn.com
-```
 
-## REGISTRY_ONLY
 
-```shell
-kubectl get configmap istio -n istio-system -o yaml | grep -o "mode: REGISTRY_ONLY"
 
-kubectl get configmap istio -n istio-system -o yaml | sed 's/mode: ALLOW_ANY/mode: REGISTRY_ONLY/g' | kubectl replace -n istio-system -f -
 
-# 等待下发成功后
-kubectl -n istio-samples exec -it $SOURCE_POD -c sleep -- curl -I https://edition.cnn.com
-kubectl -n istio-samples exec -it $SOURCE_POD -c sleep -- curl -I http://httpbin.org/headers | grep "HTTP/"
-```
-
-### http
-
-```shell
-# 建立 Service Entry 对象，注册外部服务
-kubectl apply -f - <<EOF
-apiVersion: networking.istio.io/v1alpha3
-kind: ServiceEntry
-metadata:
-  name: httpbin-org
-spec:
-  hosts:
-  - httpbin.org
-  ports:
-  - number: 80
-    name: http
-    protocol: HTTP
-  resolution: DNS
-  location: MESH_EXTERNAL
-EOF
-
-kubectl -n istio-samples exec -it $SOURCE_POD -c sleep -- curl -I http://httpbin.org/headers | grep "HTTP/"
-```
-
-### https
-
-```shell
-kubectl apply -f - <<EOF
-apiVersion: networking.istio.io/v1alpha3
-kind: ServiceEntry
-metadata:
-  name: edition-cnn-com
-spec:
-  hosts:
-  - edition.cnn.com
-  ports:
-  - number: 443
-    name: https
-    protocol: HTTPS
-  resolution: DNS
-  location: MESH_EXTERNAL
-EOF
-
-kubectl -n istio-samples exec -it $SOURCE_POD -c sleep -- curl -I https://edition.cnn.com | grep "HTTP/"
-
-# kubectl -n istio-samples logs $SOURCE_POD -c istio-proxy
-# kubectl -n istio-system logs -l istio-mixer-type=telemetry -c mixer | grep 'edition.cnn.com'
-```
-
-### 外部服务治理
-
-```shell
-kubectl -n istio-samples exec -it $SOURCE_POD -c sleep sh
-time curl -o /dev/null -s -w "%{http_code}\n" http://httpbin.org/delay/5
-
-kubectl apply -f - <<EOF
-apiVersion: networking.istio.io/v1alpha3
-kind: VirtualService
-metadata:
-  name: httpbin-org
-spec:
-  hosts:
-    - httpbin.org
-  http:
-  - timeout: 3s
-    route:
-      - destination:
-          host: httpbin.org
-        weight: 100
-EOF
-
-kubectl -n istio-samples exec -it $SOURCE_POD -c sleep sh
-time curl -o /dev/null -s -w "%{http_code}\n" http://httpbin.org/delay/5
-```
 
 ### http -> https
 

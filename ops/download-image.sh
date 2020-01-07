@@ -1,8 +1,8 @@
 RemoteRegistry=registry.sloth.com/ipaas
 
-IstioCurrentVersion=1.4.0
-IstioOldVersion=1.3.5
-istio_modules=("kubectl" "galley" "mixer" "proxyv2" "pilot" "citadel" "sidecar_injector" "node-agent-k8s")
+IstioCurrentVersion=1.4.2
+IstioOldVersion=1.4.1
+istio_modules=("kubectl" "galley" "mixer" "proxyv2" "pilot" "citadel" "sidecar_injector" "node-agent-k8s" "proxy_init")
 
 for module in ${istio_modules[*]}
 do
@@ -14,23 +14,23 @@ docker push ${RemoteRegistry}/${module}:${IstioCurrentVersion}
 docker rmi ${RemoteRegistry}/${module}:${IstioCurrentVersion}
 done
 
-PrometheusCurrentVersion=v2.12.0
-docker pull prom/prometheus:${PrometheusCurrentVersion}
-docker tag prom/prometheus:${PrometheusCurrentVersion} ${RemoteRegistry}/prometheus:${PrometheusCurrentVersion}
-docker push ${RemoteRegistry}/prometheus:${PrometheusCurrentVersion}
-docker rmi ${RemoteRegistry}/prometheus:${PrometheusCurrentVersion}
+# PrometheusCurrentVersion=v2.12.0
+# docker pull prom/prometheus:${PrometheusCurrentVersion}
+# docker tag prom/prometheus:${PrometheusCurrentVersion} ${RemoteRegistry}/prometheus:${PrometheusCurrentVersion}
+# docker push ${RemoteRegistry}/prometheus:${PrometheusCurrentVersion}
+# docker rmi ${RemoteRegistry}/prometheus:${PrometheusCurrentVersion}
 
-GrafanaCurrentVersion=6.4.3
-docker pull grafana/grafana:${GrafanaCurrentVersion}
-docker tag grafana/grafana:${GrafanaCurrentVersion} ${RemoteRegistry}/grafana:${GrafanaCurrentVersion}
-docker push ${RemoteRegistry}/grafana:${GrafanaCurrentVersion}
-docker rmi ${RemoteRegistry}/grafana:${GrafanaCurrentVersion}
+# GrafanaCurrentVersion=6.4.3
+# docker pull grafana/grafana:${GrafanaCurrentVersion}
+# docker tag grafana/grafana:${GrafanaCurrentVersion} ${RemoteRegistry}/grafana:${GrafanaCurrentVersion}
+# docker push ${RemoteRegistry}/grafana:${GrafanaCurrentVersion}
+# docker rmi ${RemoteRegistry}/grafana:${GrafanaCurrentVersion}
 
-KialiCurrentVersion=v1.9
-docker pull docker.io/kiali/kiali:${KialiCurrentVersion}
-docker tag docker.io/kiali/kiali:${KialiCurrentVersion} ${RemoteRegistry}/kiali:${KialiCurrentVersion}
-docker push ${RemoteRegistry}/kiali:${KialiCurrentVersion}
-docker rmi ${RemoteRegistry}/kiali:${KialiCurrentVersion}
+# KialiCurrentVersion=v1.9
+# docker pull docker.io/kiali/kiali:${KialiCurrentVersion}
+# docker tag docker.io/kiali/kiali:${KialiCurrentVersion} ${RemoteRegistry}/kiali:${KialiCurrentVersion}
+# docker push ${RemoteRegistry}/kiali:${KialiCurrentVersion}
+# docker rmi ${RemoteRegistry}/kiali:${KialiCurrentVersion}
 
 # OpenzipkinVersion=2.14.2
 # docker pull docker.io/openzipkin/zipkin:${OpenzipkinVersion}

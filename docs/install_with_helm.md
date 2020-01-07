@@ -10,7 +10,7 @@
 ```shell
 # 构建yaml文件
 LocalHub=registry.sloth.com/ipaas
-IstioTag=1.4.0-dev
+IstioTag=1.4.2
 
 # yaml/istio-init.yaml
 helm template --name=istio-init --namespace istio-system \
@@ -41,7 +41,7 @@ EOF
 kubectl apply -f yaml/istio-init.yaml
 
 # 验证 28
-kubectl -n istio-system wait --for=condition=complete job --all
+kubectl wait --for=condition=complete job --all
 kubectl -n istio-system get pod
 kubectl get crds | grep 'istio.io\|certmanager.k8s.io' | wc -l
 
@@ -64,7 +64,7 @@ kubectl delete -f istio-release/install/kubernetes/helm/istio-init/files
 ```shell
 # 构建yaml文件
 LocalHub=registry.sloth.com/ipaas
-IstioTag=1.4.0
+IstioTag=1.4.2
 
 # 最小安装 /dev/stdout
 # --set global.tracer.zipkin.address="zipkin.istio-system:9411" \
@@ -84,6 +84,8 @@ helm template --name=istio --namespace istio-system \
   --set pilot.autoscaleMin=1 \
   --set pilot.resources.requests.cpu=62m \
   --set pilot.resources.requests.memory=256Mi \
+  --set pilot.env.PILOT_HTTP10=1 \
+  --set pilot.env.PILOT_BLOCK_HTTP_ON_443=false \
   --set mixer.policy.autoscaleMin=1 \
   --set mixer.telemetry.autoscaleMin=1 \
   --set mixer.telemetry.resources.requests.cpu=125m \

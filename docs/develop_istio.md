@@ -13,7 +13,7 @@
 brew install ruby
 brew install gnu-tar
 
-sudo gem install --no-ri --no-rdoc fpm
+sudo gem install --no-document fpm
 
 fpm --version
 ```
@@ -30,17 +30,24 @@ GO111MODULE=on go mod vendor
 mkdir -p /Users/zhangbaohao/software/golang/workspace/out/linux_amd64/release/docker_build/docker.kubectl
 wget -P /Users/zhangbaohao/software/golang/workspace/out/linux_amd64/release/docker_build/docker.kubectl https://storage.googleapis.com/kubernetes-release/release/v1.13.10/bin/linux/amd64/kubectl
 vi docker/Dockerfile.kubectl
+# 基础镜像准备 gcr.io/distroless/static:latest
+docker pull cistio/distroless-static:latest
+docker tag cistio/distroless-static:latest gcr.io/distroless/static:latest
+docker rmi cistio/distroless-static:latest
+# 基础镜像准备 gcr.io/distroless/cc:latest
+docker pull cistio/distroless-cc:latest
+docker tag cistio/distroless-cc:latest gcr.io/distroless/cc:latest
+docker rmi cistio/distroless-cc:latest
 
 make init # 初始化，检查目录结构、Go版本号、初始化环境变量、检查vendor等
 
 cat > .env<<EOF
 export HUB=registry.sloth.com/ipaas
-export TAG=1.4.0-dev
+export TAG=1.4.2-dev
 EOF
 source .env
 
 make build # 编译
-make pilot # 编译pilot组件
 make pilot-agent
 
 make docker # 构建镜像

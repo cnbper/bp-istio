@@ -1,19 +1,88 @@
 # istio-proxy
 
 ```shell
+# 调整镜像地址
+sed -i '' "s/docker.io\/kennethreitz/registry.sloth.com\/ipaas/g" istio-release/samples/httpbin/httpbin.yaml
+
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: Namespace
+metadata:
+ name: samples
+ labels:
+    istio-injection: enabled
+EOF
+kubectl -n samples apply -f istio-release/samples/httpbin/httpbin.yaml
+```
+
+## 基本操作
+
+```shell
 # 查看 istio-proxy 日志
-kubectl -n istio-samples get pod
-kubectl -n istio-samples logs -f reviews-v2-95f489c6b-fwds8 istio-proxy
+kubectl -n samples logs -f $(kubectl -n samples get pod -l app=httpbin -o jsonpath={.items..metadata.name}) istio-proxy
 
 # 进入 istio-proxy
-kubectl -n istio-samples exec -it reviews-v2-95f489c6b-fwds8 -c istio-proxy sh
+kubectl -n samples exec -it $(kubectl -n samples get pod -l app=httpbin -o jsonpath={.items..metadata.name}) -c istio-proxy sh
 
 # 获取 istio-proxy 配置
-ns=foo && kubectl -n $ns exec $(kubectl -n $ns get pods -l app=httpbin -o jsonpath='{.items[0].metadata.name}') -c istio-proxy -- curl localhost:15000/config_dump -s
+kubectl -n samples exec -it $(kubectl -n samples get pod -l app=httpbin -o jsonpath={.items..metadata.name}) -c istio-proxy -- curl localhost:15000/config_dump -s
 
-kubectl -n istio-samples port-forward details-v1-5cb8cdc758-w8psf 15000:15000
+# 暴露管理端口
+kubectl -n samples port-forward $(kubectl -n samples get pod -l app=httpbin -o jsonpath={.items..metadata.name}) 15000:15000
 # http://localhost:15000/stats/prometheus
 # http://localhost:15000/config_dump
+```
+
+## istio-proxy资源占用过多问题
+
+- Envoy配置中的Listener、Cluster、Endpoint数量
+
+```shell
+# 获取 listener 信息
+istioctl -n samples proxy-config listeners $(kubectl -n samples get pod -l app=httpbin -o jsonpath={.items..metadata.name}) | wc -l
+
+# 获取 cluster 信息
+istioctl -n samples proxy-config clusters $(kubectl -n samples get pod -l app=httpbin -o jsonpath={.items..metadata.name}) | wc -l
+
+# 获取 endpoint 信息
+istioctl -n samples proxy-config endpoints $(kubectl -n samples get pod -l app=httpbin -o jsonpath={.items..metadata.name}) | wc -l
+
+# 可以使用 proxy-config endpoints 命令来查看当前集群的可用端点。
+istioctl -n samples proxy-config endpoints $(kubectl -n samples get pod -l app=httpbin -o jsonpath={.items..metadata.name}) --cluster outbound\|8000\|\|httpbin.samples.svc.cluster.local
+
+# Listener数量 23 175 538
+# Cluster数量 33 325 87
+# endpoint数量 31 466 331
+```
+
+- 内存占用情况
+
+```shell
+docker ps | grep k8s_istio-proxy_httpbin
+docker stats b98115982cdf
+
+CONTAINER ID    CPU %    MEM USAGE / LIMIT    MEM %    NET I/O    BLOCK I/O    PIDS
+b98115982cdf    0.30%    26.3MiB / 1GiB       2.57%    0B / 0B    0B / 0B      23
+# 从上面的数据可以看到，在一个有325个cluster和175个Listener的服务网格中，一个Envoy的实际内存占用量达到了100M左右；网格中一共有466个实例，则所有Envoy占用的内存达到了466*100M=46.6G，这些增加的内存消耗是一个不容小视的数据。
+```
+
+- 减少TCMalloc预留系统内存
+
+```shell
+# Envoy占用的内存大小和其配置相关，和请求处理速率无关。在一个较大的namespace中，Envoy大约占用50M内存。然而对于多大为“较大”，Istio官方文档并未给出一个明确的数据。
+
+# 通过Envoy的管理端口查看上面环境中一个Envoy内存分配的详细情况：
+# 各个指标的详细说明参见Envoy文档 https://www.envoyproxy.io/docs/envoy/latest/api-v2/admin/v2alpha/memory.proto.html
+# 由于Envoy采用了TCMalloc作为内存管理器，导致其占用内存大于Envoy实际使用内存。 https://gperftools.github.io/gperftools/tcmalloc.html
+kubectl -n samples exec -it $(kubectl -n samples get pod -l app=httpbin -o jsonpath={.items..metadata.name}) -c istio-proxy -- curl localhost:15000/memory
+{
+ "allocated": "7964344",        //Envoy实际占用内存 约7.4m
+ "heap_size": "11534336",       //TCMalloc预留的系统内存 约11m
+ "pageheap_unmapped": "0",
+ "pageheap_free": "1540096",
+ "total_thread_cache": "1332536"
+}
+# TCMalloc的内存分配效率比glibc的malloc更高，但会预留系统内存，导致程序占用内存大于其实际所需内存。
 ```
 
 ## 开启debug日志
@@ -35,3 +104,4 @@ ns=foo && kubectl -n $ns exec $(kubectl -n $ns get pods -l app=httpbin -o jsonpa
 - 解决方案
 
 ## upstream connect error or disconnect/reset before headers. reset reason: connection failure
+
