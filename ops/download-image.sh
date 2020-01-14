@@ -1,7 +1,7 @@
 RemoteRegistry=registry.sloth.com/ipaas
 
-IstioCurrentVersion=1.4.2
-IstioOldVersion=1.4.1
+IstioCurrentVersion=1.4.3
+IstioOldVersion=1.4.2
 istio_modules=("kubectl" "galley" "mixer" "proxyv2" "pilot" "citadel" "sidecar_injector" "node-agent-k8s" "proxy_init")
 
 for module in ${istio_modules[*]}
@@ -13,6 +13,9 @@ docker tag istio/${module}:$IstioCurrentVersion ${RemoteRegistry}/${module}:${Is
 docker push ${RemoteRegistry}/${module}:${IstioCurrentVersion}
 docker rmi ${RemoteRegistry}/${module}:${IstioCurrentVersion}
 done
+
+# docker pull istio/coredns-plugin:0.2-istio-1.1
+# docker pull coredns/coredns:1.6.2
 
 # PrometheusCurrentVersion=v2.12.0
 # docker pull prom/prometheus:${PrometheusCurrentVersion}

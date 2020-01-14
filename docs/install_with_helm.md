@@ -10,7 +10,7 @@
 ```shell
 # 构建yaml文件
 LocalHub=registry.sloth.com/ipaas
-IstioTag=1.4.2
+IstioTag=1.4.3
 
 # yaml/istio-init.yaml
 helm template --name=istio-init --namespace istio-system \
@@ -64,7 +64,7 @@ kubectl delete -f istio-release/install/kubernetes/helm/istio-init/files
 ```shell
 # 构建yaml文件
 LocalHub=registry.sloth.com/ipaas
-IstioTag=1.4.2
+IstioTag=1.4.3
 
 # 最小安装 /dev/stdout
 # --set global.tracer.zipkin.address="zipkin.istio-system:9411" \
@@ -81,6 +81,7 @@ helm template --name=istio --namespace istio-system \
   --set global.policyCheckFailOpen=true \
   --set global.imagePullPolicy=Always \
   --set global.outboundTrafficPolicy.mode=ALLOW_ANY \
+  --set global.proxy.dnsRefreshRate=60s \
   --set pilot.autoscaleMin=1 \
   --set pilot.resources.requests.cpu=62m \
   --set pilot.resources.requests.memory=256Mi \
@@ -100,6 +101,8 @@ helm template --name=istio --namespace istio-system \
 
 # 调整访问日志格式
 # "[sidecar-proxy-access] [%START_TIME%] \"%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%\" %RESPONSE_CODE% %RESPONSE_FLAGS% \"%DYNAMIC_METADATA(istio.mixer:status)%\" \"%UPSTREAM_TRANSPORT_FAILURE_REASON%\" %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% \"%REQ(X-FORWARDED-FOR)%\" \"%REQ(USER-AGENT)%\" \"%REQ(X-REQUEST-ID)%\" \"%REQ(:AUTHORITY)%\" \"%UPSTREAM_HOST%\" %UPSTREAM_CLUSTER% %UPSTREAM_LOCAL_ADDRESS% %DOWNSTREAM_LOCAL_ADDRESS% %DOWNSTREAM_REMOTE_ADDRESS% \"%REQUESTED_SERVER_NAME%\"\n"
+
+# "[%START_TIME%][-][sidecar-proxy|%REQ(:METHOD)%|-|%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%|%DOWNSTREAM_REMOTE_ADDRESS_WITHOUT_PORT%|%DURATION%|%RESPONSE_CODE%|%BYTES_SENT%][%REQ(tRequestId)%|%REQ(X-REQUEST-ID)%|%REQ(Referer)%|%REQ(USER-AGENT)%][%REQ(X-B3-TraceId)%|%REQ(X-B3-SpanId)%|%REQ(X-B3-ParentSpanId)%|%REQ(X-Span-Export)%][-][%PROTOCOL%\" \"%RESPONSE_FLAGS%\" \"%DYNAMIC_METADATA(istio.mixer:status)%\" \"%UPSTREAM_TRANSPORT_FAILURE_REASON%\" \"%BYTES_RECEIVED%\" \"%RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)%\" \"%REQ(X-FORWARDED-FOR)%\" \"%REQ(:AUTHORITY)%\" \"%UPSTREAM_HOST%\" \"%UPSTREAM_CLUSTER%\" \"%UPSTREAM_LOCAL_ADDRESS%\" \"%DOWNSTREAM_LOCAL_ADDRESS%\" \"%DOWNSTREAM_REMOTE_ADDRESS%\" \"%REQUESTED_SERVER_NAME%\"]\n"
 ```
 
 - **部署 Istio 控制面**

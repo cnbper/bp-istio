@@ -36,7 +36,7 @@ istioctl -n samples-sec1 proxy-config endpoints $(kubectl -n samples-sec1 get po
 ## 服务可见性控制
 
 ```shell
-# Sidecar 全局配置，仅允许将流量发送到同一名称空间中的其他工作负载以及istio-system名称空间中的服务。
+# Sidecar 全局配置，仅允许将流量发送到同一名称空间中的其他工作负载以及istio-system和external-svc名称空间中的服务。
 cat <<EOF | kubectl -n istio-system apply -f -
 apiVersion: networking.istio.io/v1alpha3
 kind: Sidecar
@@ -46,6 +46,7 @@ spec:
   egress:
   - hosts:
     - "./*"
+    - "external-svc/*"
     - "istio-system/*"
 EOF
 kubectl -n samples-sec2 exec $(kubectl -n samples-sec2 get pod -l app=sleep -o jsonpath={.items..metadata.name}) -c sleep -- curl -i http://httpbin.samples-sec1:8000/ip
