@@ -16,6 +16,7 @@ IstioTag=1.4.3
 helm template --name=istio-init --namespace istio-system \
   --set global.hub=$LocalHub \
   --set global.tag=$IstioTag \
+  --set global.imagePullPolicy=Always \
   --set certmanager.enabled=true \
   istio-release/install/kubernetes/helm/istio-init > yaml/istio-init.yaml
 ```
@@ -66,7 +67,8 @@ kubectl delete -f istio-release/install/kubernetes/helm/istio-init/files
 LocalHub=registry.sloth.com/ipaas
 IstioTag=1.4.3
 
-# 最小安装 /dev/stdout
+# 最小安装
+# --set global.proxy.accessLogFile="/dev/stdout" \
 # --set global.tracer.zipkin.address="zipkin.istio-system:9411" \
 # --set pilot.traceSampling=100.0 \
 # --set global.outboundTrafficPolicy.mode=REGISTRY_ONLY \
@@ -81,7 +83,7 @@ helm template --name=istio --namespace istio-system \
   --set global.policyCheckFailOpen=true \
   --set global.imagePullPolicy=Always \
   --set global.outboundTrafficPolicy.mode=ALLOW_ANY \
-  --set global.proxy.dnsRefreshRate=60s \
+  --set global.proxy.dnsRefreshRate=300s \
   --set pilot.autoscaleMin=1 \
   --set pilot.resources.requests.cpu=62m \
   --set pilot.resources.requests.memory=256Mi \
@@ -91,7 +93,7 @@ helm template --name=istio --namespace istio-system \
   --set mixer.telemetry.autoscaleMin=1 \
   --set mixer.telemetry.resources.requests.cpu=125m \
   --set mixer.telemetry.resources.requests.memory=128Mi \
-  --set mixer.adapters.prometheus.metricsExpiryDuration=2m \
+  --set mixer.adapters.prometheus.metricsExpiryDuration=10m \
   --set galley.replicaCount=1 \
   --set security.replicaCount=1 \
   --set gateways.enabled=false \
@@ -100,9 +102,6 @@ helm template --name=istio --namespace istio-system \
   istio-release/install/kubernetes/helm/istio > yaml/istio.yaml
 
 # 调整访问日志格式
-# "[sidecar-proxy-access] [%START_TIME%] \"%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%\" %RESPONSE_CODE% %RESPONSE_FLAGS% \"%DYNAMIC_METADATA(istio.mixer:status)%\" \"%UPSTREAM_TRANSPORT_FAILURE_REASON%\" %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% \"%REQ(X-FORWARDED-FOR)%\" \"%REQ(USER-AGENT)%\" \"%REQ(X-REQUEST-ID)%\" \"%REQ(:AUTHORITY)%\" \"%UPSTREAM_HOST%\" %UPSTREAM_CLUSTER% %UPSTREAM_LOCAL_ADDRESS% %DOWNSTREAM_LOCAL_ADDRESS% %DOWNSTREAM_REMOTE_ADDRESS% \"%REQUESTED_SERVER_NAME%\"\n"
-
-# "[%START_TIME%][-][sidecar-proxy|%REQ(:METHOD)%|-|%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%|%DOWNSTREAM_REMOTE_ADDRESS_WITHOUT_PORT%|%DURATION%|%RESPONSE_CODE%|%BYTES_SENT%][%REQ(tRequestId)%|%REQ(X-REQUEST-ID)%|%REQ(Referer)%|%REQ(USER-AGENT)%][%REQ(X-B3-TraceId)%|%REQ(X-B3-SpanId)%|%REQ(X-B3-ParentSpanId)%|%REQ(X-Span-Export)%][-][%PROTOCOL%\" \"%RESPONSE_FLAGS%\" \"%DYNAMIC_METADATA(istio.mixer:status)%\" \"%UPSTREAM_TRANSPORT_FAILURE_REASON%\" \"%BYTES_RECEIVED%\" \"%RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)%\" \"%REQ(X-FORWARDED-FOR)%\" \"%REQ(:AUTHORITY)%\" \"%UPSTREAM_HOST%\" \"%UPSTREAM_CLUSTER%\" \"%UPSTREAM_LOCAL_ADDRESS%\" \"%DOWNSTREAM_LOCAL_ADDRESS%\" \"%DOWNSTREAM_REMOTE_ADDRESS%\" \"%REQUESTED_SERVER_NAME%\"]\n"
 ```
 
 - **部署 Istio 控制面**
@@ -120,6 +119,21 @@ kubectl delete -f yaml/istio.yaml
 ```
 
 ## 安装附加服务
+
+### 监控面板
+
+```shell
+IstioCurVersion=istio-1.4.3
+
+mkdir -p yaml/monitor/$IstioCurVersion
+cp -r istio-release/install/kubernetes/helm/istio/charts/grafana yaml/monitor/$IstioCurVersion
+cp -r istio-release/install/kubernetes/helm/istio/charts/prometheus yaml/monitor/$IstioCurVersion
+```
+
+- 通过 Beyond Compare 对比监控配置变化
+
+1.3.2 升级到 1.4.2 ：galley-dashboard.json
+1.4.2 升级到 1.4.3 ：无变化
 
 ### prometheus
 
