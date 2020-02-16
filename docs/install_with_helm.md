@@ -3,14 +3,32 @@
 <https://istio.io/docs/setup/kubernetes/install/helm/>
 <https://istio.io/docs/reference/config/installation-options/>
 
+```shell
+# kubectl label nodes kube-node1 istio.control.plane=yes
+# kubectl label nodes kube-node2 istio.control.plane=yes
+# kubectl label nodes kube-node1 istio.data.plane=yes
+# kubectl label nodes kube-node2 istio.data.plane=yes
+#  annotations:
+#    scheduler.alpha.kubernetes.io/node-selector: istio.control.plane=yes
+
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: Namespace
+metadata:
+ name: istio-system
+EOF
+```
+
 ## istio init
+
+### kubernetes 1.13+
 
 - **构建安装文件**
 
 ```shell
 # 构建yaml文件
 LocalHub=registry.sloth.com/ipaas
-IstioTag=1.4.3
+IstioTag=1.4.4
 
 # yaml/istio-init.yaml
 helm template --name=istio-init --namespace istio-system \
@@ -25,20 +43,6 @@ helm template --name=istio-init --namespace istio-system \
 
 ```shell
 # 安装
-kubectl label nodes kube-node1 istio.control.plane=yes
-kubectl label nodes kube-node2 istio.control.plane=yes
-kubectl label nodes kube-node1 istio.data.plane=yes
-kubectl label nodes kube-node2 istio.data.plane=yes
-
-cat <<EOF | kubectl apply -f -
-apiVersion: v1
-kind: Namespace
-metadata:
- name: istio-system
- annotations:
-   scheduler.alpha.kubernetes.io/node-selector: istio.control.plane=yes
-EOF
-
 kubectl apply -f yaml/istio-init.yaml
 
 # 验证 28
@@ -58,6 +62,26 @@ kubectl delete namespace istio-system
 kubectl delete -f istio-release/install/kubernetes/helm/istio-init/files
 ```
 
+### kubernetes 1.11
+
+```shell
+# 构建yaml文件
+cat istio-release/install/kubernetes/helm/istio-init/files/crd-10.yaml | sed -e 's/preserveUnknownFields: false/preserveUnknownFields: true/g' | sed -e 's/type: object//g' >> yaml/istio-crd.yaml
+cat istio-release/install/kubernetes/helm/istio-init/files/crd-11.yaml | sed -e 's/preserveUnknownFields: false/preserveUnknownFields: true/g' | sed -e 's/type: object//g' >> yaml/istio-crd.yaml
+cat istio-release/install/kubernetes/helm/istio-init/files/crd-14.yaml | sed -e 's/preserveUnknownFields: false/preserveUnknownFields: true/g' | sed -e 's/type: object//g' >> yaml/istio-crd.yaml
+cat istio-release/install/kubernetes/helm/istio-init/files/crd-certmanager-10.yaml | sed -e 's/preserveUnknownFields: false/preserveUnknownFields: true/g' | sed -e 's/type: object//g' >> yaml/istio-crd.yaml
+cat istio-release/install/kubernetes/helm/istio-init/files/crd-certmanager-11.yaml | sed -e 's/preserveUnknownFields: false/preserveUnknownFields: true/g' | sed -e 's/type: object//g' >> yaml/istio-crd.yaml
+
+# 安装
+kubectl apply -f yaml/istio-crd.yaml
+
+# 验证 28
+kubectl get crds | grep 'istio.io\|certmanager.k8s.io' | wc -l
+
+# 卸载
+# kubectl delete -f yaml/istio-crd.yaml
+```
+
 ## istio控制面
 
 - **构建istio控制面安装文件**
@@ -65,13 +89,18 @@ kubectl delete -f istio-release/install/kubernetes/helm/istio-init/files
 ```shell
 # 构建yaml文件
 LocalHub=registry.sloth.com/ipaas
-IstioTag=1.4.3
+IstioTag=1.4.4
 
 # 最小安装
 # --set global.proxy.accessLogFile="/dev/stdout" \
 # --set global.tracer.zipkin.address="zipkin.istio-system:9411" \
 # --set pilot.traceSampling=100.0 \
 # --set global.outboundTrafficPolicy.mode=REGISTRY_ONLY \
+
+# https://istio.io/docs/tasks/security/citadel-config/health-check/
+# Since Citadel health checking currently only monitors the health status of CSR service API, this feature is not needed if the production setup is not using SDS or adding virtual machines.
+# --set security.citadelHealthCheck=true \
+
 helm template --name=istio --namespace istio-system \
   --set global.hub=$LocalHub \
   --set global.tag=$IstioTag \
@@ -85,7 +114,7 @@ helm template --name=istio --namespace istio-system \
   --set global.outboundTrafficPolicy.mode=ALLOW_ANY \
   --set global.proxy.dnsRefreshRate=300s \
   --set pilot.autoscaleMin=1 \
-  --set pilot.resources.requests.cpu=62m \
+  --set pilot.resources.requests.cpu=60m \
   --set pilot.resources.requests.memory=256Mi \
   --set pilot.env.PILOT_HTTP10=1 \
   --set pilot.env.PILOT_BLOCK_HTTP_ON_443=false \

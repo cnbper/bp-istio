@@ -1,7 +1,7 @@
 RemoteRegistry=registry.sloth.com/ipaas
 
-IstioCurrentVersion=1.4.3
-IstioOldVersion=1.4.2
+IstioCurrentVersion=1.4.4
+IstioOldVersion=1.4.3
 istio_modules=("kubectl" "galley" "mixer" "proxyv2" "pilot" "citadel" "sidecar_injector" "node-agent-k8s" "proxy_init")
 
 for module in ${istio_modules[*]}
