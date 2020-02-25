@@ -3,34 +3,26 @@
 <https://istio.io/docs/setup/kubernetes/install/helm/>
 <https://istio.io/docs/reference/config/installation-options/>
 
-```shell
-# kubectl label nodes kube-node1 istio.control.plane=yes
-# kubectl label nodes kube-node2 istio.control.plane=yes
-# kubectl label nodes kube-node1 istio.data.plane=yes
-# kubectl label nodes kube-node2 istio.data.plane=yes
-#  annotations:
-#    scheduler.alpha.kubernetes.io/node-selector: istio.control.plane=yes
+## 构造部署文件
 
-cat <<EOF | kubectl apply -f -
-apiVersion: v1
-kind: Namespace
-metadata:
- name: istio-system
-EOF
+```shell
+LocalHub=registry.sloth.com/ipaas
+IstioTag=1.3.8
 ```
 
-## istio init
-
-### kubernetes 1.13+
-
-- **构建安装文件**
+### istio-cni_install
 
 ```shell
-# 构建yaml文件
-LocalHub=registry.sloth.com/ipaas
-IstioTag=1.4.4
+helm template --name=istio-cni --namespace kube-system \
+  --set hub=$LocalHub \
+  --set tag=$IstioTag \
+  --set excludeNamespaces={"istio-system,kube-system,external-svc"} \
+  istio-release/install/kubernetes/helm/istio-cni > yaml/istio-cni_install.yaml
+```
 
-# yaml/istio-init.yaml
+### istio-init kubernetes 1.13+
+
+```shell
 helm template --name=istio-init --namespace istio-system \
   --set global.hub=$LocalHub \
   --set global.tag=$IstioTag \
@@ -39,58 +31,17 @@ helm template --name=istio-init --namespace istio-system \
   istio-release/install/kubernetes/helm/istio-init > yaml/istio-init.yaml
 ```
 
-- **安装crd**
+### istio-crd kubernetes 1.11
 
 ```shell
-# 安装
-kubectl apply -f yaml/istio-init.yaml
+rm -rf yaml/istio-crd.yaml
 
-# 验证 28
-kubectl wait --for=condition=complete job --all
-kubectl -n istio-system get pod
-kubectl get crds | grep 'istio.io\|certmanager.k8s.io' | wc -l
-
-# 删除无用安装文件
-kubectl delete -f yaml/istio-init.yaml
+cat istio-release/install/kubernetes/helm/istio-init/files/* | sed -e 's/preserveUnknownFields: false/preserveUnknownFields: true/g' | sed -e 's/type: object//g' >> yaml/istio-crd.yaml
 ```
 
-- **卸载**
+### istio 控制面
 
 ```shell
-# 卸载
-kubectl delete namespace istio-system
-kubectl delete -f istio-release/install/kubernetes/helm/istio-init/files
-```
-
-### kubernetes 1.11
-
-```shell
-# 构建yaml文件
-cat istio-release/install/kubernetes/helm/istio-init/files/crd-10.yaml | sed -e 's/preserveUnknownFields: false/preserveUnknownFields: true/g' | sed -e 's/type: object//g' >> yaml/istio-crd.yaml
-cat istio-release/install/kubernetes/helm/istio-init/files/crd-11.yaml | sed -e 's/preserveUnknownFields: false/preserveUnknownFields: true/g' | sed -e 's/type: object//g' >> yaml/istio-crd.yaml
-cat istio-release/install/kubernetes/helm/istio-init/files/crd-14.yaml | sed -e 's/preserveUnknownFields: false/preserveUnknownFields: true/g' | sed -e 's/type: object//g' >> yaml/istio-crd.yaml
-cat istio-release/install/kubernetes/helm/istio-init/files/crd-certmanager-10.yaml | sed -e 's/preserveUnknownFields: false/preserveUnknownFields: true/g' | sed -e 's/type: object//g' >> yaml/istio-crd.yaml
-cat istio-release/install/kubernetes/helm/istio-init/files/crd-certmanager-11.yaml | sed -e 's/preserveUnknownFields: false/preserveUnknownFields: true/g' | sed -e 's/type: object//g' >> yaml/istio-crd.yaml
-
-# 安装
-kubectl apply -f yaml/istio-crd.yaml
-
-# 验证 28
-kubectl get crds | grep 'istio.io\|certmanager.k8s.io' | wc -l
-
-# 卸载
-# kubectl delete -f yaml/istio-crd.yaml
-```
-
-## istio控制面
-
-- **构建istio控制面安装文件**
-
-```shell
-# 构建yaml文件
-LocalHub=registry.sloth.com/ipaas
-IstioTag=1.4.4
-
 # 最小安装
 # --set global.proxy.accessLogFile="/dev/stdout" \
 # --set global.tracer.zipkin.address="zipkin.istio-system:9411" \
@@ -128,12 +79,68 @@ helm template --name=istio --namespace istio-system \
   --set gateways.enabled=false \
   --set prometheus.enabled=false \
   --set sidecarInjectorWebhook.replicaCount=1 \
+  --set istio_cni.enabled=true \
   istio-release/install/kubernetes/helm/istio > yaml/istio.yaml
 
 # 调整访问日志格式
 ```
 
-- **部署 Istio 控制面**
+## 部署
+
+### 部署 istio-cni_install
+
+```shell
+kubectl apply -f yaml/istio-cni_install.yaml
+
+kubectl -n kube-system get pod -l k8s-app=istio-cni-node
+kubectl -n kube-system describe DaemonSet istio-cni-node
+# 注意：Error creating: pods "istio-cni-node-" is forbidden: pods with system-cluster-critical priorityClass is not permitted in istio-system namespace 解决方案 需要使用命名空间 kube-system
+```
+
+### 创建控制面命名空间
+
+```shell
+# kubectl label nodes kube-node1 istio.control.plane=yes
+# kubectl label nodes kube-node2 istio.control.plane=yes
+# kubectl label nodes kube-node1 istio.data.plane=yes
+# kubectl label nodes kube-node2 istio.data.plane=yes
+#  annotations:
+#    scheduler.alpha.kubernetes.io/node-selector: istio.control.plane=yes
+
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: Namespace
+metadata:
+ name: istio-system
+EOF
+```
+
+### 部署 istio-init kubernetes 1.13+
+
+```shell
+# 安装
+kubectl apply -f yaml/istio-init.yaml
+
+# 验证 28
+kubectl wait --for=condition=complete job --all
+kubectl -n istio-system get pod
+kubectl get crds | grep 'istio.io\|certmanager.k8s.io' | wc -l
+
+# 删除无用安装文件
+kubectl delete -f yaml/istio-init.yaml
+```
+
+### 部署 istio-crd kubernetes 1.11
+
+```shell
+# 安装
+kubectl apply -f yaml/istio-crd.yaml
+
+# 验证 28
+kubectl get crds | grep 'istio.io\|certmanager.k8s.io' | wc -l
+```
+
+### 部署 istio 控制面
 
 ```shell
 # 安装
@@ -142,9 +149,56 @@ kubectl apply -f yaml/istio.yaml
 # 验证
 kubectl get svc -n istio-system -o wide
 kubectl get pods -n istio-system -o wide
+```
 
+### 卸载
+
+```shell
 # 卸载
 kubectl delete -f yaml/istio.yaml
+kubectl delete -f istio-release/install/kubernetes/helm/istio-init/files
+kubectl delete namespace istio-system
+kubectl apply -f yaml/istio-cni_install.yaml
+```
+
+## 升级 istio 数据面
+
+### kubernetes 1.15 之前
+
+- /opt/istio/upgrade-sidecar.sh
+
+```shell
+# upgrade-sidecar.sh，通过修改终止宽限期来触发滚动更新
+NS=$1
+
+function refresh-all-pods() {
+    echo
+    DEPLOYMENT_LIST=$(kubectl -n $NS get deployment -o jsonpath='{.items[*].metadata.name}')
+    echo "Refreshing pods in all Deployments"
+    for deployment_name in $DEPLOYMENT_LIST ; do
+        TERMINATION_GRACE_PERIOD_SECONDS=$(kubectl -n $NS get deployment "$deployment_name" -o jsonpath='{.spec.template.spec.terminationGracePeriodSeconds}')
+    if [ "$TERMINATION_GRACE_PERIOD_SECONDS" -eq 30 ]; then
+        TERMINATION_GRACE_PERIOD_SECONDS='31'
+    else
+        TERMINATION_GRACE_PERIOD_SECONDS='30'
+    fi
+    patch_string="{\"spec\":{\"template\":{\"spec\":{\"terminationGracePeriodSeconds\":$TERMINATION_GRACE_PERIOD_SECONDS}}}}"
+    kubectl -n $NS patch deployment $deployment_name -p $patch_string
+done
+echo
+}
+
+refresh-all-pods $NAMESPACE
+```
+
+```shell
+chmod +x /opt/istio/upgrade-sidecar.sh
+
+kubectl get ns -l istio-injection=enabled
+
+/opt/istio/upgrade-sidecar.sh pes
+/opt/istio/upgrade-sidecar.sh cmpms
+/opt/istio/upgrade-sidecar.sh gm-eass
 ```
 
 ## 安装附加服务
@@ -161,6 +215,7 @@ cp -r istio-release/install/kubernetes/helm/istio/charts/prometheus yaml/monitor
 
 - 通过 Beyond Compare 对比监控配置变化
 
+1.3.2 升级到 1.3.8 ：无变化
 1.3.2 升级到 1.4.2 ：galley-dashboard.json
 1.4.2 升级到 1.4.3 ：无变化
 
