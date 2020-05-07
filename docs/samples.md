@@ -6,7 +6,7 @@ sed -i '' "s/docker.io\/kennethreitz/registry.sloth.com\/ipaas/g" istio-release/
 sed -i '' "s/governmentpaas/registry.sloth.com\/ipaas/g" istio-release/samples/sleep/sleep.yaml
 ```
 
-## samples-1
+## 自动注入
 
 ```shell
 cat <<EOF | kubectl apply -f -
@@ -36,7 +36,7 @@ apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
   name: httpbin
-spec:`
+spec:
   rules:
   - host: httpbin.sloth.com
     http:
@@ -48,6 +48,17 @@ spec:`
 EOF
 
 # 访问：http://httpbin.sloth.com
+```
+
+## 手动注入
+
+```shell
+kubectl create ns samples-ext
+
+kubectl -n samples-ext apply -f <(istioctl kube-inject -f yaml/samples/httpbin.yaml)
+kubectl -n samples-ext apply -f <(istioctl kube-inject -f yaml/samples/sleep.yaml)
+
+kubectl -n samples-ext exec $(kubectl -n samples-ext get pod -l app=sleep -o jsonpath={.items..metadata.name}) -c sleep -- curl -sL -o /dev/null -D - http://httpbin.samples-ext:8000/ip
 ```
 
 ## samples-header

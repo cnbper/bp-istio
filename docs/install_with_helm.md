@@ -52,6 +52,8 @@ cat istio-release/install/kubernetes/helm/istio-init/files/* | sed -e 's/preserv
 # Since Citadel health checking currently only monitors the health status of CSR service API, this feature is not needed if the production setup is not using SDS or adding virtual machines.
 # --set security.citadelHealthCheck=true \
 
+# OCP 3 需要增加如下参数   --set global.proxy.privileged=true \
+
 helm template --name=istio --namespace istio-system \
   --set global.hub=$LocalHub \
   --set global.tag=$IstioTag \
@@ -79,7 +81,7 @@ helm template --name=istio --namespace istio-system \
   --set gateways.enabled=false \
   --set prometheus.enabled=false \
   --set sidecarInjectorWebhook.replicaCount=1 \
-  --set istio_cni.enabled=true \
+  --set istio_cni.enabled=false \
   istio-release/install/kubernetes/helm/istio > yaml/istio.yaml
 
 # 调整访问日志格式
@@ -90,6 +92,7 @@ helm template --name=istio --namespace istio-system \
 ### 部署 istio-cni_install
 
 ```shell
+# 注意：istio 要求 cni 版本为 0.3.0
 kubectl apply -f yaml/istio-cni_install.yaml
 
 kubectl -n kube-system get pod -l k8s-app=istio-cni-node
@@ -151,14 +154,61 @@ kubectl get svc -n istio-system -o wide
 kubectl get pods -n istio-system -o wide
 ```
 
+### 初始化默认配置数据
+
+```shell
+# 创建外部服务命名空间
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: Namespace
+metadata:
+ name: external-svc
+EOF
+
+cat <<EOF | kubectl -n istio-system apply -f -
+apiVersion: networking.istio.io/v1alpha3
+kind: Sidecar
+metadata:
+  name: default
+spec:
+  egress:
+  - hosts:
+    - "./*"
+    - "external-svc/*"
+    - "istio-system/*"
+EOF
+
+# 测试
+kubectl -n istio-system get Sidecar
+```
+
+### 监控面板
+
+```shell
+IstioCurVersion=istio-1.3.8
+
+mkdir -p yaml/monitor/$IstioCurVersion
+cp -r istio-release/install/kubernetes/helm/istio/charts/grafana yaml/monitor/$IstioCurVersion
+cp -r istio-release/install/kubernetes/helm/istio/charts/prometheus yaml/monitor/$IstioCurVersion
+```
+
+- 通过 Beyond Compare 对比监控配置变化
+
+1.3.2 升级到 1.3.8 ：无变化
+1.3.2 升级到 1.4.2 ：galley-dashboard.json
+1.4.2 升级到 1.4.3 ：无变化
+
 ### 卸载
 
 ```shell
+# 删除监控数据
 # 卸载
+kubectl delete namespace external-svc
 kubectl delete -f yaml/istio.yaml
+oc adm policy remove-scc-from-group anyuid system:serviceaccounts -n istio-system
 kubectl delete -f istio-release/install/kubernetes/helm/istio-init/files
 kubectl delete namespace istio-system
-kubectl apply -f yaml/istio-cni_install.yaml
+kubectl delete -f yaml/istio-cni_install.yaml
 ```
 
 ## 升级 istio 数据面
@@ -196,28 +246,10 @@ chmod +x /opt/istio/upgrade-sidecar.sh
 
 kubectl get ns -l istio-injection=enabled
 
-/opt/istio/upgrade-sidecar.sh pes
-/opt/istio/upgrade-sidecar.sh cmpms
-/opt/istio/upgrade-sidecar.sh gm-eass
+/opt/istio/upgrade-sidecar.sh istio-samples
 ```
 
 ## 安装附加服务
-
-### 监控面板
-
-```shell
-IstioCurVersion=istio-1.4.3
-
-mkdir -p yaml/monitor/$IstioCurVersion
-cp -r istio-release/install/kubernetes/helm/istio/charts/grafana yaml/monitor/$IstioCurVersion
-cp -r istio-release/install/kubernetes/helm/istio/charts/prometheus yaml/monitor/$IstioCurVersion
-```
-
-- 通过 Beyond Compare 对比监控配置变化
-
-1.3.2 升级到 1.3.8 ：无变化
-1.3.2 升级到 1.4.2 ：galley-dashboard.json
-1.4.2 升级到 1.4.3 ：无变化
 
 ### prometheus
 
@@ -232,6 +264,7 @@ helm template --name=istio --namespace istio-system \
   istio-release/install/kubernetes/helm/istio/charts/prometheus > yaml/istio-prometheus.yaml
 
 # 安装
+# kubectl apply -f yaml/istio-prometheus-alerts.yaml
 kubectl apply -f yaml/istio-prometheus.yaml
 
 # 卸载

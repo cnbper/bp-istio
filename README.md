@@ -8,13 +8,17 @@
 mkdir -p temp
 
 # 注意调整istio版本
-IstioCurVersion=istio-1.4.4
+IstioCurVersion=istio-1.3.8
+# IstioCurVersion=istio-1.5.2
 tar zxvf $IstioCurVersion-osx.tar.gz -C temp
 rm -rf istio-release/*
 mv temp/$IstioCurVersion/* istio-release
 
 cp istio-release/bin/istioctl ../kubernetes-vagrant-centos-cluster/bin/istioctl
 sudo cp istio-release/bin/istioctl /usr/local/bin/istioctl
+
+# 删除 yaml 文件
+rm -rf yaml/*
 ```
 
 ## helm安装
@@ -29,7 +33,7 @@ sudo cp istio-release/bin/istioctl /usr/local/bin/istioctl
 
 ### mac
 
-TODO
+- /usr/local/bin/helm
 
 ### linux
 
